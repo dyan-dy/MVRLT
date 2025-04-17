@@ -1,0 +1,2 @@
+pip install trimesh
+pip install pytorch3d -f https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py3x_cu118_pyt2.1_download.html
