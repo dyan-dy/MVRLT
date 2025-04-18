@@ -42,7 +42,7 @@ def render(file_path, output_type, output_dir, num_views):
     # Setup 
     "setting up blender render ..."
     args = [
-        BLENDER_PATH, '-b', '-P', os.path.join(os.path.dirname(__file__), 'utils', 'render.py'),
+        BLENDER_PATH, '-b', '-P', os.path.join(os.path.dirname(__file__), 'utils', 'blender_render.py'),
         '--',
         '--views', json.dumps(views),
         '--object', os.path.expanduser(file_path),
@@ -192,6 +192,7 @@ mask_np = (mask.squeeze(-1).cpu().numpy() * 255).astype(np.uint8)
 texture = texture_inpaint(texture, mask_np)
 MeshRender.set_texture(texture)  # alias with blender render; Hunyuan render with rasters
 textured_mesh = MeshRender.save_mesh() # alias with blender render
+scene = render_to_3d_scene()
 
 # render tex mv
 output_type = 'results'
@@ -203,3 +204,8 @@ MSE(gt, rendered)
 PSNR(gt, rendered)
 LPIPS(gt, rendered)
 SSIM(gt, rendered)
+
+if main:
+    args = parser() # should summarize all params here.
+    save_to_outputs()
+    score()
