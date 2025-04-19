@@ -151,43 +151,6 @@ def init_nodes(save_depth=False, save_normal=False, save_albedo=False, save_mist
         links.new(render_layers.outputs['Mist'], mist_file_output.inputs[0])
         
         outputs['mist'] = mist_file_output
-    # print("save envpath")
-    # if envmap_path is not None:
-    #     print("[DEBUG] initializing shader node") # need to initialize nodes and links because two differnet nodes
-    #     env_world = bpy.data.worlds['World']
-    #     env_world.use_nodes = True
-    #     env_nodes = env_world.node_tree.nodes
-    #     env_links = env_world.node_tree.links
-    #     envmap_file_output = env_nodes.new('ShaderNodeTexEnvironment') # what kind of nodes should new here.line162.
-    #     print("[DEBUG] loading env map image")
-    #     envmap_file_output.image = bpy.data.images.load(envmap_path) # no base_path attributes
-    #     envmap_file_output.location = (-300, 0)
-    # #     print("2")
-    # #     # bg = nodes.new('ShaderNodeBackground')
-    # #     # output = nodes.get('World Output') or nodes.new('ShaderNodeOutputWorld')
-    # #     print("3")
-    # #     # links.new(env_tex.outputs['Color'], bg.inputs['Color'])
-    # #     # links.new(bg.outputs['Background'], output.inputs['Surface'])
-    # #     print("4")
-    # #     # envmap_file_output = nodes.new('CompositorNodeOutputFile')
-    # #     # envmap_file_output.base_path = ''
-    #     print("[DEBUG] setting env map file output")
-    #     # envmap_file_output.file_slots[0].use_node_format = True # crash because still in compositional node
-    # #     print("4.2")
-    #     # envmap_file_output.format.file_format = 'EXR'
-    # #     print("4.3")
-    #     # envmap_file_output.format.color_mode = 'RGB'
-    #     # envmap_file_output.format.color_depth = '16'
-    #     bg_node = env_nodes.new('ShaderNodeBackground')
-    #     bg_node.location = (0, 0)
-    #     output_node = env_nodes.new('ShaderNodeOutputWorld')
-    #     output_node.location = (300, 0)
-    #     print("[DEBUG] saving env map rendered result")
-    #     # envmap_file_output.new(render_layers.outputs['Image'], envmap_file_output.inputs[0])
-    #     # outputs['envmap'] = envmap_file_output
-    #     env_links.new(envmap_file_output.outputs['Color'], bg_node.inputs['Color'])
-    #     env_links.new(bg_node.outputs['Background'], output_node.inputs['Surface'])
-    #     print("[DEBUG] envmap file Done!")
     
     return outputs, spec_nodes
 
@@ -388,17 +351,6 @@ def delete_custom_normals():
             bpy.context.view_layer.objects.active = this_obj
             bpy.ops.mesh.customdata_custom_splitnormals_clear()
 
-# def override_material():
-    # new_mat = bpy.data.materials.new(name="Override0123456789")
-    # new_mat.use_nodes = True
-    # new_mat.node_tree.nodes.clear()
-    # bsdf = new_mat.node_tree.nodes.new('ShaderNodeBsdfDiffuse')
-    # bsdf.inputs[0].default_value = (0.5, 0.5, 0.5, 1)  # RGBA
-    # bsdf.inputs[1].default_value = 1 # roughness
-    # output = new_mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
-    # new_mat.node_tree.links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
-    # bpy.context.scene.view_layers['View Layer'].material_override = new_mat
-
 def override_material(material_type='diffuse', mask_only=False):
     print("[INFO] start overriding material")
     # Clear existing materials
@@ -465,39 +417,12 @@ def override_material(material_type='diffuse', mask_only=False):
         warm.inputs[0].default_value = (1.0, 0.5, 0.3, 1)    # 橙色偏暖
         warm.inputs[1].default_value = 0.5                   # 中等粗糙度
         new_mat.node_tree.links.new(warm.outputs['BSDF'], output.inputs['Surface'])
-    
-    elif mask_only:  # 渲染出来是点云不是mask
-        print("mask")
-        # 创建一个 Diffuse 材质，用于物体遮罩
-        mask_shader = new_mat.node_tree.nodes.new('ShaderNodeBsdfDiffuse')
-        mask_shader.inputs[0].default_value = (1.0, 1.0, 1.0, 1)  # 物体区域为白色
-
-        # 创建透明材质用于背景
-        transparent_shader = new_mat.node_tree.nodes.new('ShaderNodeBsdfTransparent')
-
-        # 使用 Mix Shader 混合前景（物体白色）和背景（透明）
-        mix_shader = new_mat.node_tree.nodes.new('ShaderNodeMixShader')
-        new_mat.node_tree.links.new(mask_shader.outputs['BSDF'], mix_shader.inputs[1])
-        new_mat.node_tree.links.new(transparent_shader.outputs['BSDF'], mix_shader.inputs[2])
-
-        # 使用 Object Info 节点来为物体的所有面创建统一的遮罩
-        object_info = new_mat.node_tree.nodes.new('ShaderNodeObjectInfo')
-        # 使用颜色区分不同物体, 默认是白色的
-        color_output = object_info.outputs['Color']
-
-        # 使用该颜色直接控制混合
-        mix_shader.inputs[0].default_value = 1.0  # 物体为白色
-
-        # 连接到输出
-        new_mat.node_tree.links.new(mix_shader.outputs['Shader'], output.inputs['Surface'])
 
     else:
-        print("❌ 类型未识别！可选: diffuse / glossy / metal / glass / blue / warm / mask")
+        print("Unrecognized material. Should be diffuse / glossy / metal / glass / blue / warm.")
         return
-    print("5")
     # bpy.context.scene.view_layers['View Layer'].material_override = new_mat
     bpy.context.view_layer.material_override = new_mat # blender 3.0.1
-    print(f"✅ 已应用材质覆盖: {material_type}")
 
 def unhide_all_objects() -> None:
     """Unhides all objects in the scene.
@@ -626,7 +551,7 @@ def main(arg):
         save_albedo=arg.save_albedo,
         save_mist=arg.save_mist
     )
-    print("init nodes output:", outputs, spec_nodes)
+    # print("init nodes output:", outputs, spec_nodes)
     if arg.object.endswith(".blend"):
         delete_invisible_objects()
     elif arg.bg_only:
@@ -682,7 +607,6 @@ def main(arg):
         
         bpy.context.scene.render.filepath = os.path.join(arg.output_folder, f'{i:03d}.png')
         for name, output in outputs.items():
-            print("hello")
             print(os.path.join(arg.output_folder, f'{i:03d}_{name}'))
             output.file_slots[0].path = os.path.join(arg.output_folder, f'{i:03d}_{name}')
             print("output.file_slots[0].path", output.file_slots[0].path)
@@ -743,8 +667,7 @@ if __name__ == '__main__':
     parser.add_argument('--split_normal', action='store_true', help='Split the normals of the mesh.')
     parser.add_argument('--save_mesh', action='store_true', help='Save the mesh as a .ply file.')
     parser.add_argument('--bg_only', action='store_true', help='Only render the background.')
-    parser.add_argument('--mask_only', action='store_true', help='Render object only into masks.')
-    parser.add_argument('--depth_only', action='store_true', help='Render object only into depth.')
+    parser.add_argument('--mask_only', action='store_true', help='[!DO NOT USE THIS MODE! Simplest solution is to use alpha channel for masks.] Render object only into masks.')
     argv = sys.argv[sys.argv.index("--") + 1:]
     args = parser.parse_args(argv)
 
