@@ -164,6 +164,17 @@ def lpips(img1, img2, value_range=(0, 1)):
 # TODO: Please finish the main function logic by your own.
 
 def main():
+    
+    # io paths and preprocessors
+
+    # render gt
+
+    # baking texture
+
+    # get textured mesh
+
+    # validation and evaluation
+
     pass
 
 if __name__ == "__main__":
