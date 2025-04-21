@@ -53,7 +53,7 @@ def blender_render_to_multiview(file_path, output_type, output_dir, num_views):
         BLENDER_PATH, '-b', '-P', os.path.join(os.path.dirname(__file__), 'utils', 'blender_render.py'),
         '--',
         '--views', json.dumps(views),
-        '--object', os.path.expanduser(file_path),
+        '--object', os.path.expanduser(file_path), # your inputs
         '--resolution', '512',
         '--output_folder', output_folder,
         '--engine', 'CYCLES',
@@ -167,9 +167,11 @@ def main():
     
     # io paths and preprocessors
 
-    # render gt
+    # render gt (blender)
 
-    # baking texture
+    # baking texture 
+    # texture = model(envmap)
+    # texture = baker(multiview_envmap)
 
     # get textured mesh
 
