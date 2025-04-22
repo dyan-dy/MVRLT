@@ -10,3 +10,6 @@ pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67
 
 numpy 1.26.4 (<2)
 
+safetensors
+
+huggingface_hub

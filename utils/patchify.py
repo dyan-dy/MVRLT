@@ -54,6 +54,8 @@ if __name__ == "__main__":
 
     ## load 3d scene
     voxel_tensor = voxelize(f"assets/scene_com.glb")['tensor']
+    torch.save(voxel_tensor, "debug/voxelized_scene.pt")
+    print(voxel_tensor.shape)  # (1, 1, 64, 64, 64)
     # filepath = 'assets/hello.ply'
     # scene_mesh = o3d.io.read_triangle_mesh(filepath)
     # # breakpoint()
