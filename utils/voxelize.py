@@ -12,6 +12,7 @@ from functools import partial
 import numpy as np
 import open3d as o3d
 import utils3d
+import torch
 
 
 def voxelize(filepath):  # glb单位是m，ply单位是mm，需要归一化（trellis代码缺少归一化机制）
@@ -36,6 +37,14 @@ def voxelize(filepath):  # glb单位是m，ply单位是mm，需要归一化（tr
     print(mesh.vertices)
     voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(mesh, voxel_size=1/64, min_bound=(-0.5, -0.5, -0.5), max_bound=(0.5, 0.5, 0.5)) # VoxelGrid with 4096 voxels.
     print(voxel_grid)
+
+    # convert to tensor
+    D = H = W = 64
+    voxel_tensor = torch.zeros((1, 1, D, H, W), dtype=torch.float32)
+    for voxel in voxel_grid.get_voxels():
+        x, y, z = voxel.grid_index
+        voxel_tensor[0, 0, z, y, x] = 1.0
+
     vertices = np.array([voxel.grid_index for voxel in voxel_grid.get_voxels()]) # (4096, 3)
     print(vertices.shape)
     # breakpoint()
@@ -44,7 +53,7 @@ def voxelize(filepath):  # glb单位是m，ply单位是mm，需要归一化（tr
     
     utils3d.io.write_ply(os.path.join('assets', f'hello.ply'), vertices)  # if 3d, expected to be N,C,D,H,W
     # breakpoint()
-    return {'voxelized': True, 'num_voxels': len(vertices)}
+    return {'voxelized': True, 'num_voxels': len(vertices), 'tensor':voxel_tensor}
 
 
 # voxelize("assets/scene_com.glb")
