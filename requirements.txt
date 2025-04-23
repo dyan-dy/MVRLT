@@ -13,3 +13,7 @@ numpy 1.26.4 (<2)
 safetensors
 
 huggingface_hub
+
+pip install xformers==0.0.23.post1 --index-url https://download.pytorch.org/whl/cu118
+
+Imath

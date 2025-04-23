@@ -26,14 +26,21 @@ class RotaryPositionEmbedder(nn.Module):
         self.freqs = 1.0 / (10000 ** self.freqs)
         
     def _get_phases(self, indices: torch.Tensor) -> torch.Tensor:
+        # print("indices:", indices.shape) 
         self.freqs = self.freqs.to(indices.device)
+        # print("freqs:", self.freqs.shape)
         phases = torch.outer(indices, self.freqs)
+        # print("phases:", phases.shape)
         phases = torch.polar(torch.ones_like(phases), phases)
+        # print("phases:", phases.shape)
         return phases
         
     def _rotary_embedding(self, x: torch.Tensor, phases: torch.Tensor) -> torch.Tensor:
-        x_complex = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
-        x_rotated = x_complex * phases
+        print(x.shape, phases.shape) # [1, 3, 64, 64, 32, 64], [1, 1, 64, 64, 1071]
+        # breakpoint()
+        x_complex = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2).contiguous()) # before view as complex: [1, 3, 64, 64, 32, 32, 2]
+        print(x_complex.shape) # [1, 3, 64, 64, 32, 32]
+        x_rotated = x_complex * phases # [1, 3, 64, 64, 32, 32], [1, 1, 64, 64, 1071]
         x_embed = torch.view_as_real(x_rotated).reshape(*x_rotated.shape[:-1], -1).to(x.dtype)
         return x_embed
         
@@ -50,11 +57,13 @@ class RotaryPositionEmbedder(nn.Module):
                 indices = indices.unsqueeze(0).expand(q.shape[:-2] + (-1,))
         
         phases = self._get_phases(indices.reshape(-1)).reshape(*indices.shape[:-1], -1)
+        print("phases:", phases.shape)
         if phases.shape[1] < self.hidden_size // 2:
             phases = torch.cat([phases, torch.polar(
                 torch.ones(*phases.shape[:-1], self.hidden_size // 2 - phases.shape[1], device=phases.device),
                 torch.zeros(*phases.shape[:-1], self.hidden_size // 2 - phases.shape[1], device=phases.device)
             )], dim=-1)
+        print("phases:", phases.shape)
         q_embed = self._rotary_embedding(q, phases)
         k_embed = self._rotary_embedding(k, phases)
         return q_embed, k_embed

@@ -5,54 +5,88 @@ from safetensors.torch import load_file
 from huggingface_hub import hf_hub_download
 import models 
 
-# 配置路径
-config_path = 'configs/ss_vae_conv3d_16l8_fp16.json'
-# weights_url = "JeffreyXiang/TRELLIS-image-large/ckpts/ss_enc_conv3d_16l8_fp16.safetensors"
-weights_local_path = "ss_enc_conv3d_16l8_fp16.safetensors"
+def load_encoder(config_path: str, repo_id: str, filename: str, cache_dir: str = "cache", use_fp16: bool = False):
+    # 下载或定位权重
+    weights_path = hf_hub_download(repo_id=repo_id, filename=filename, cache_dir=cache_dir)
+    print(f"[Cache] Using file: {weights_path}")
 
-repo_id = "JeffreyXiang/TRELLIS-image-large"  # 仓库ID
-filename = "ckpts/ss_enc_conv3d_16l8_fp16.safetensors"  # 文件名
-cache_dir = "cache"  # 缓存目录
+    # 读取模型配置
+    with open(config_path, "r") as f:
+        config = json.load(f)
+    encoder_config = config["models"]["encoder"]
 
-weights_local_path = hf_hub_download(
-    repo_id=repo_id, 
-    filename=filename,
-    cache_dir="cache"  # 可以选择设置缓存路径
-)
+    # 初始化模型
+    model_class = getattr(models, encoder_config["name"])
+    model = model_class(**encoder_config["args"])
 
-print(f"[Cache] Using file: {weights_local_path}")
+    # 加载权重
+    weights = load_file(weights_path)
+    model.load_state_dict(weights)
 
-# 解析配置文件
-with open(config_path, "r") as file:
-    config = json.load(file)
+    # 设置精度与 eval 模式
+    model = model.half() if use_fp16 else model.float()
+    model.eval()
 
-encoder_config = config["models"]["encoder"]
-model_class = getattr(models, encoder_config["name"])
-model = model_class(**encoder_config["args"])
+    print(f"[Model] Loaded {encoder_config['name']} successfully.")
+    return model
 
-# 加载 safetensors 权重
-weights = load_file(weights_local_path)
-model.load_state_dict(weights)
-
-# fp16 安全和兼容性设置
-# model.half()
-model = model.float() # 不支持fp16计算 "compute_columns3d" not implemented for 'Half'
-model.eval()
-
-print(f"[Model] Loaded {encoder_config['name']} from config & weights!")
-
-# 测试推理
-with torch.no_grad():
-    dummy_input = torch.load("debug/voxelized_scene.pt") # torch.randn(1, 1, 64, 64, 64) 
-    print(dummy_input.dtype)
-    output = model(dummy_input)
-    torch.save(output, "debug/encoded_voxelized_scene.pt")
-    print("输出 Shape:", output.shape)
+def encoder(model, input_tensor: torch.Tensor, save_path: str = None):
+    model.eval()
+    with torch.no_grad():
+        output = model(input_tensor)
+        if save_path:
+            torch.save(output, save_path)
+            print(f"[Output] Saved to {save_path}")
+        return output
 
 
+# ====================
 
+# # 配置路径
+# config_path = 'configs/ss_vae_conv3d_16l8_fp16.json'
+# # weights_url = "JeffreyXiang/TRELLIS-image-large/ckpts/ss_enc_conv3d_16l8_fp16.safetensors"
+# weights_local_path = "ss_enc_conv3d_16l8_fp16.safetensors"
 
+# repo_id = "JeffreyXiang/TRELLIS-image-large"  # 仓库ID
+# filename = "ckpts/ss_enc_conv3d_16l8_fp16.safetensors"  # 文件名
+# cache_dir = "cache"  # 缓存目录
 
+# weights_local_path = hf_hub_download(
+#     repo_id=repo_id, 
+#     filename=filename,
+#     cache_dir="cache"  # 可以选择设置缓存路径
+# )
+
+# print(f"[Cache] Using file: {weights_local_path}")
+
+# # 解析配置文件
+# with open(config_path, "r") as file:
+#     config = json.load(file)
+
+# encoder_config = config["models"]["encoder"]
+# model_class = getattr(models, encoder_config["name"])
+# model = model_class(**encoder_config["args"])
+
+# # 加载 safetensors 权重
+# weights = load_file(weights_local_path)
+# model.load_state_dict(weights)
+
+# # fp16 安全和兼容性设置
+# # model.half()
+# model = model.float() # 不支持fp16计算 "compute_columns3d" not implemented for 'Half'
+# model.eval()
+
+# print(f"[Model] Loaded {encoder_config['name']} from config & weights!")
+
+# # 测试推理
+# with torch.no_grad():
+#     dummy_input = torch.load("debug/voxelized_scene.pt") # torch.randn(1, 1, 64, 64, 64) 
+#     # print(dummy_input.dtype)
+#     output = model(dummy_input)
+#     torch.save(output, "debug/encoded_voxelized_scene.pt")
+#     print("输出 Shape:", output.shape)
+
+# ==========
 
 # load encoder structure
 
