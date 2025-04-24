@@ -8,8 +8,8 @@ from torch.autograd import Variable
 import json
 import numpy as np
 import trimesh
-from pytorch3d.structures import Meshes
-from pytorch3d.renderer import TexturesVertex
+# from pytorch3d.structures import Meshes
+# from pytorch3d.renderer import TexturesVertex
 from utils.lds import sphere_hammersley_sequence
 from utils.mesh_render import MeshRender
 from subprocess import DEVNULL, call
@@ -57,8 +57,8 @@ def blender_render_to_multiview(file_path, output_type, output_dir, num_views):
         '--resolution', '512',
         '--output_folder', output_folder,
         '--engine', 'CYCLES',
-        '--geo_mode', # should open geo_mode for changing material
-        '--material_type', 'diffuse',
+        # '--geo_mode', # should open geo_mode for changing material
+        '--material_type', 'metal',
         # '--save_depth',
         '--envmap_path', 'assets/blue_photo_studio_4k.exr',
         # '--save_mesh',  # should comment out for bg only mode
@@ -168,6 +168,8 @@ def main():
     # io paths and preprocessors
 
     # render gt (blender)
+    file_path, output_type, output_dir, num_views = "/root/autodl-tmp/gaodongyu/MVRLT/assets/human1.glb", "rgb", "outputs", 15
+    results = blender_render_to_multiview(file_path, output_type, output_dir, num_views)
 
     # baking texture 
     # texture = model(envmap)
@@ -177,7 +179,7 @@ def main():
 
     # validation and evaluation
 
-    pass
+    # pass
 
 if __name__ == "__main__":
     main()

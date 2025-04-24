@@ -2,3 +2,10 @@ outputs
 debug
 cache
 assets
+TRELLIS/trellis/assets
+TRELLIS/trellis/cache
+TRELLIS/trellis/datasets
+TRELLIS/trellis/debug
+TRELLIS/trellis/*.mp4
+TRELLIS/trellis/*.ply
+TRELLIS/trellis/*.glb
