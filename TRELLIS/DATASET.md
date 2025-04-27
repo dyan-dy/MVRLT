@@ -46,7 +46,7 @@ First, we need to load the metadata of the dataset.
 python dataset_toolkits/build_metadata.py <SUBSET> --output_dir <OUTPUT_DIR> [--source <SOURCE>]
 ```
 
-- `SUBSET`: The subset of the dataset to load. Options are `ObjaverseXL`, `ABO`, `3D-FUTURE`, `HSSD`, and `Toys4k`.
+- `SUBSET`: The subset of the dataset to load. Options are `ObjaverseXL`, `ABO`, `3D-FUTURE`, `HSSD`, and `Toys4k`. 3D-FUTURE和Toys4k需要额外申请权限。sketchfab处理过了。
 - `OUTPUT_DIR`: The directory to save the data.
 - `SOURCE`: Required if `SUBSET` is `ObjaverseXL`. Options are `sketchfab` and `github`.
 

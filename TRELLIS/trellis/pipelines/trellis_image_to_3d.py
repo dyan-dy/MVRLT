@@ -10,7 +10,9 @@ import rembg
 from .base import Pipeline
 from . import samplers
 from ..modules import sparse as sp
+from ..utils.wandb_utils import run_feature_visualization
 
+import wandb    
 
 class TrellisImageTo3DPipeline(Pipeline):
     """
@@ -254,12 +256,16 @@ class TrellisImageTo3DPipeline(Pipeline):
 
         # if getattr(self, "save_features", False):
         self.features = {
-            "slat_sampler_input_feats": noise.feats.detach().cpu(),  # Input features to sampler
-            "slat_sampler_input_coords": noise.coords.detach().cpu(),  # Input coords to sampler
-            "slat_sampler_output_feats": slat.feats.detach().cpu(),  # Output features from sampler
+            "slat_sampler_input_feats": noise.feats.detach().cpu(),  # Input features [N, 8]
+            "slat_sampler_input_coords": noise.coords.detach().cpu(),  # Input coords [N, 4]
+            "slat_sampler_output_feats": slat.feats.detach().cpu(),  # Output features [N, 8]
         }
 
+        # wandb.log({f"feature_map_{i}": wandb.Image(feature_map)})
+        run_feature_visualization(self.features)
         torch.save(self.features, "debug/slat_sampler_features.pt")
+        print("hello there here is a slat sampler feature and we saved it")
+        # breakpoint()
         
         return slat
 

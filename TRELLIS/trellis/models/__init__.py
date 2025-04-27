@@ -59,6 +59,7 @@ def from_pretrained(path: str, **kwargs):
         path_parts = path.split('/')
         repo_id = f'{path_parts[0]}/{path_parts[1]}'
         model_name = '/'.join(path_parts[2:])
+        print(repo_id, model_name)
         config_file = hf_hub_download(repo_id, f"{model_name}.json")
         model_file = hf_hub_download(repo_id, f"{model_name}.safetensors")
 

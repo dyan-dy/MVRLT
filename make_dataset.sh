@@ -1,0 +1,1 @@
+python render_script.py --file_path /root/autodl-tmp/gaodongyu/MVRLT/assets/human1.glb --output_type rgb --output_dir outputs --num_views 15

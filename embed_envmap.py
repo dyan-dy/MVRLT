@@ -46,10 +46,13 @@ def latlong_to_dirs(height: int, width: int) -> torch.Tensor:
 height, width = 2048, 4096  # Light map 尺寸
 
 # 读取 EXR 文件并将其转换为光照张量
-light_map = read_exr_file('assets/blue_photo_studio_4k.exr', width, height)
+light_map = read_exr_file('assets/blue_photo_studio_4k.exr', width, height) # [H, W, 3]
 
 # 获取从 equirectangular 转换的方向向量
 dirs = latlong_to_dirs(height, width)  # [H, W, 3]
 dirs = dirs.view(1, height * width, 3)  # [1, H*W, 3]
+# breakpoint()
+# print(dirs.shape) # [1, 8388608, 3], [-1, 1]
 
-print(dirs.shape) # [1, 8388608, 3]
+# 将光照张量和方向向量组合成一个新的张量
+light_map_with_dirs = torch.cat([dirs, light_map.view(1, height * width, 3)], dim=-1)  # [1, H*W, 6]

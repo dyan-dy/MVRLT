@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import json
 import numpy as np
+import argparse
 import trimesh
 # from pytorch3d.structures import Meshes
 # from pytorch3d.renderer import TexturesVertex
@@ -168,7 +169,21 @@ def main():
     # io paths and preprocessors
 
     # render gt (blender)
-    file_path, output_type, output_dir, num_views = "/root/autodl-tmp/gaodongyu/MVRLT/assets/human1.glb", "rgb", "outputs", 15
+    # file_path, output_type, output_dir, num_views = "/root/autodl-tmp/gaodongyu/MVRLT/assets/human1.glb", "rgb", "outputs", 15
+
+    parser = argparse.ArgumentParser(description="Process 3D model rendering parameters.")
+    parser.add_argument('--file_path', type=str, required=True, help='Path to the input .glb file')
+    parser.add_argument('--output_type', type=str, default='rgb', help='Type of output (e.g., rgb)')
+    parser.add_argument('--output_dir', type=str, default='outputs', help='Directory to save outputs')
+    parser.add_argument('--num_views', type=int, default=15, help='Number of views to render')
+
+    args = parser.parse_args()
+
+    file_path = args.file_path
+    output_type = args.output_type
+    output_dir = args.output_dir
+    num_views = args.num_views
+
     results = blender_render_to_multiview(file_path, output_type, output_dir, num_views)
 
     # baking texture 

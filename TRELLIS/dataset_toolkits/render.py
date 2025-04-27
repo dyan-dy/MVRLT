@@ -10,7 +10,7 @@ from functools import partial
 from subprocess import DEVNULL, call
 import numpy as np
 from utils import sphere_hammersley_sequence
-
+from pathlib import Path
 
 BLENDER_LINK = 'https://download.blender.org/release/Blender3.0/blender-3.0.1-linux-x64.tar.xz'
 BLENDER_INSTALLATION_PATH = '/tmp'
@@ -23,6 +23,30 @@ def _install_blender():
         os.system(f'wget {BLENDER_LINK} -P {BLENDER_INSTALLATION_PATH}')
         os.system(f'tar -xvf {BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64.tar.xz -C {BLENDER_INSTALLATION_PATH}')
 
+def init_camera_pose(num_views):
+    import json
+    pose_dir = './multi_views/pose_' + str(num_views) + '.json'
+    pose_path = Path(pose_dir)
+    if ((pose_path).exists()):
+        with open(pose_dir, 'r') as f:
+            print("\nAlready exists views: "+ pose_dir)
+            return json.load(f)  # already exists views
+    else:
+        print("\n\nGenerating views...")
+        yaws = []
+        pitchs = []
+        offset = (np.random.rand(), np.random.rand())
+        for i in range(num_views):
+            y, p = sphere_hammersley_sequence(i, num_views, offset)
+            yaws.append(y)
+            pitchs.append(p)
+        radius = [2] * num_views
+        fov = [40 / 180 * np.pi] * num_views
+        views = [{'yaw': y, 'pitch': p, 'radius': r, 'fov': f} for y, p, r, f in zip(yaws, pitchs, radius, fov)]
+
+        with open(pose_dir, 'w') as f:
+            json.dump(views, f, indent=2)
+    return views
 
 def _render(file_path, sha256, output_dir, num_views):
     output_folder = os.path.join(output_dir, 'renders', sha256)
@@ -44,10 +68,12 @@ def _render(file_path, sha256, output_dir, num_views):
         '--',
         '--views', json.dumps(views),
         '--object', os.path.expanduser(file_path),
-        '--resolution', '512',
+        '--resolution', '1024',
         '--output_folder', output_folder,
         '--engine', 'CYCLES',
-        '--save_mesh',
+        '--save_depth',
+        '--envmap_path', 'assets/blue_photo_studio_4k.exr',
+        #'--save_mesh',
     ]
     if file_path.endswith('.blend'):
         args.insert(1, file_path)

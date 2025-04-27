@@ -1,5 +1,5 @@
 import os
-# os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
@@ -10,16 +10,23 @@ from PIL import Image
 from trellis.pipelines import TrellisImageTo3DPipeline
 from trellis.utils import render_utils
 
+import wandb
+
+wandb.init(project="mvrlt", name="mv_infer")
+
 # Load a pipeline from a model folder or a Hugging Face model hub.
 pipeline = TrellisImageTo3DPipeline.from_pretrained("JeffreyXiang/TRELLIS-image-large")
 pipeline.cuda()
 
 # Load an image
-images = [
-    Image.open("assets/example_multi_image/character_1.png"),
-    Image.open("assets/example_multi_image/character_2.png"),
-    Image.open("assets/example_multi_image/character_3.png"),
-]
+# images = [
+#     Image.open("assets/example_multi_image/character_1.png"),
+#     Image.open("assets/example_multi_image/character_2.png"),
+#     Image.open("assets/example_multi_image/character_3.png"),
+# ]
+image_folder = "/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/assets/example_multi_image/bear/images"
+image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+images = [Image.open(os.path.join(image_folder, image_file)) for image_file in image_files]
 
 # Run the pipeline
 outputs = pipeline.run_multi_image(
@@ -43,4 +50,6 @@ outputs = pipeline.run_multi_image(
 video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
 video_mesh = render_utils.render_video(outputs['mesh'][0])['normal']
 video = [np.concatenate([frame_gs, frame_mesh], axis=1) for frame_gs, frame_mesh in zip(video_gs, video_mesh)]
-imageio.mimsave("sample_multi.mp4", video, fps=30)
+imageio.mimsave("output/sample_multi.mp4", video, fps=30)
+
+wandb.finish()
