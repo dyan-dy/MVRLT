@@ -72,7 +72,7 @@ def blender_render_to_multiview(output_dir, output_type, views,input_dir,envmap_
         '--envmap_path', envmap_dir
     ]
 
-    debug_file = "image_datasets/sunset_bpy_debug.txt"
+    debug_file = "image_datasets/warm_bpy_debug.txt"
     with open(debug_file, 'w') as f:
         call(args, stdout=f, stderr=f)
 
@@ -97,7 +97,7 @@ def main():
     multi_views = init_camera_pose(num_views)
     input_dir = "datasets/HSSD/raw/objects"
     
-    output_dir = "image_datasets/HSSD"   
+    output_dir = "image_datasets/HSSD" 
     
 
     # 遍历目录下所有文件
@@ -111,7 +111,7 @@ def main():
     #         print(f"使用环境光: {env_path}\n\n")
     #         results = blender_render_to_multiview(output_dir, output_type,  multi_views,input_dir,envmap_dir=env_path)
     env_folder_path = 'assets/exrs/'
-    output_type = 'rogland_sunset_4k'
+    output_type = 'warm_restaurant_night_4k'
     #blue_photo_studio_4k.exr  'brown_photostudio_02_4k'  'industrial_sunset_puresky_4k' 'kloppenheim_06_puresky_4k' 'minedump_flats_4k'
     #resting_place_4k 'rogland_moonlit_night_4k'
     # warm_restaurant_night_4k zwartkops_curve_afternoon_4k

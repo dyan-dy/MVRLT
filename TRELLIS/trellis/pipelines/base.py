@@ -26,6 +26,7 @@ class Pipeline:
         import os
         import json
         is_local = os.path.exists(f"{path}/pipeline.json")
+        print("🏠 pipeline", is_local)
 
         if is_local:
             config_file = f"{path}/pipeline.json"
@@ -35,12 +36,24 @@ class Pipeline:
 
         with open(config_file, 'r') as f:
             args = json.load(f)['args']
+        
+        print("🥁 args", args)
 
         _models = {}
+        count = 0
         for k, v in args['models'].items():
+            print("📕", k, v)
+            count += 1
+            print("🔢 count", count)
             try:
+                print("we are in models")
+                print("path", path)
+                print("v", v)
                 _models[k] = models.from_pretrained(f"{path}/{v}")
+                print("😀 finished")
             except:
+                print("we are in not models")
+                print("v", v)
                 _models[k] = models.from_pretrained(v)
 
         new_pipeline = Pipeline(_models)

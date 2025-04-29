@@ -97,7 +97,7 @@ def main():
     multi_views = init_camera_pose(num_views)
     input_dir = "datasets/HSSD/raw/objects"
     
-    output_dir = "image_datasets/HSSD"   
+    output_dir = "image_datasets/HSSD" 
     
 
     # 遍历目录下所有文件

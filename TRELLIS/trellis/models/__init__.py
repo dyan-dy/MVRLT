@@ -49,12 +49,22 @@ def from_pretrained(path: str, **kwargs):
     import os
     import json
     from safetensors.torch import load_file
+
+    # force to download from local
+    # root_path = "cache/ckpts"
+    # model_name = path.split("/")[-1]
+    # path = os.path.join(root_path, model_name)
+    print("🏠", path)
+    print("🔍", os.path.exists(f"{path}.json"))
+    print("🔍", os.path.exists(f"{path}.safetensors"))
     is_local = os.path.exists(f"{path}.json") and os.path.exists(f"{path}.safetensors")
 
     if is_local:
+        print("Loading from local path")
         config_file = f"{path}.json"
         model_file = f"{path}.safetensors"
     else:
+        print("Loading from Hugging Face model hub")
         from huggingface_hub import hf_hub_download
         path_parts = path.split('/')
         repo_id = f'{path_parts[0]}/{path_parts[1]}'

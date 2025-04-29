@@ -72,7 +72,7 @@ def blender_render_to_multiview(output_dir, output_type, views,input_dir,envmap_
         '--envmap_path', envmap_dir
     ]
 
-    debug_file = "image_datasets/sunset_bpy_debug.txt"
+    debug_file = "image_datasets/sunset_2_bpy_debug.txt"
     with open(debug_file, 'w') as f:
         call(args, stdout=f, stderr=f)
 
@@ -95,9 +95,9 @@ def main():
     # initial camera pose
     num_views = 64
     multi_views = init_camera_pose(num_views)
-    input_dir = "datasets/HSSD/raw/objects"
+    input_dir = "datasets/HSSD/raw/batch2"
     
-    output_dir = "image_datasets/HSSD"   
+    output_dir = "image_datasets/HSSD"  
     
 
     # 遍历目录下所有文件

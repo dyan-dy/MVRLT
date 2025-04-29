@@ -573,6 +573,12 @@ def cam_load(views):
             json.dump(cam_poses, f, indent=2)
         return cam_poses
 
+def exist_names_load():
+    json_path =  'assets/multview_pose/existed_names_1.json'
+    with open(json_path, 'r') as f:
+            bc_dict = json.load(f)
+    return bc_dict
+
 def main(arg):
     # Initialize context
     print("Initializing Blender context...")
@@ -587,23 +593,28 @@ def main(arg):
     )
     init_environment_map(args.envmap_path)
     print('[INFO] Environment map initialized.')
-
+    env_dict_name = os.path.splitext(os.path.basename(args.envmap_path))[0]
 
     views = json.loads(arg.views)
     cam_poses = cam_load(views)
     current_output_folder = arg.output_folder
+    bc_dict = exist_names_load()
+    import time
     for sub_dir in os.listdir(args.object_all_dir):
+        start_time = time.time()
         sub_dir_path = os.path.join(args.object_all_dir, sub_dir)
         if os.path.isdir(sub_dir_path):
             for glb_path in os.listdir(sub_dir_path):
                 print(f"sub_dir_path:  {sub_dir_path}, glb_path: {glb_path}")
                 if glb_path.endswith('.glb'):
-                    
                     object_name = os.path.splitext(os.path.basename(glb_path))[0]
                     arg.output_folder = os.path.join(current_output_folder, object_name)
-                    if os.path.exists(arg.output_folder):
-                        print(f"jump over rendered object: {arg.output_folder}")
+                    if object_name in bc_dict[env_dict_name]:
+                        print(f"{object_name} already in {env_dict_name}")
                         continue
+                    # if os.path.exists(arg.output_folder):
+                    #     print(f"jump over rendered object: {arg.output_folder}")
+                    #     continue
                     os.makedirs(arg.output_folder, exist_ok=True)
                     arg.object = os.path.join(sub_dir_path, glb_path)
                     if arg.object.endswith(".blend"):
@@ -672,7 +683,7 @@ def main(arg):
                     # Save the camera parameters
                     with open(os.path.join(arg.output_folder, 'transforms.json'), 'w') as f:
                         json.dump(to_export, f, indent=4)
-
+                    print(f"\n\nElapsed time: {time.time()-start_time} seconds")
                     if arg.save_mesh:
                         # triangulate meshes
                         unhide_all_objects()
