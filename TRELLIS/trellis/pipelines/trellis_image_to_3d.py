@@ -10,10 +10,11 @@ import rembg
 from .base import Pipeline
 from . import samplers
 from ..modules import sparse as sp
+from ..utils.envlight_embedder import EnvLightEncoder
 from ..utils.wandb_utils import run_feature_visualization
-from ..utils.envlight_embedder import EnvLightModulator # EXREmbedder  # 后面要改成支持全格式的
-
-import wandb    
+from ..utils.sparse_light_attention import SparseLightAttention
+import wandb
+from torchviz import make_dot
 
 class TrellisImageTo3DPipeline(Pipeline):
     """
@@ -33,7 +34,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         slat_sampler: samplers.Sampler = None,
         slat_normalization: dict = None,
         image_cond_model: str = None,
-    ):
+    ):  
         if models is None:
             return
         super().__init__(models)
@@ -45,9 +46,6 @@ class TrellisImageTo3DPipeline(Pipeline):
         self.rembg_session = None
         self._init_image_cond_model(image_cond_model)
 
-        self.save_features = False
-        self.features = {}
-
     @staticmethod
     def from_pretrained(path: str) -> "TrellisImageTo3DPipeline":
         """
@@ -56,8 +54,6 @@ class TrellisImageTo3DPipeline(Pipeline):
         Args:
             path (str): The path to the model. Can be either local path or a Hugging Face repository.
         """
-        print("📂We load from", path)
-        # path = "/root/.cache/huggingface/hub/models--JeffreyXiang--TRELLIS-image-large/snapshots/25e0d31ffbebe4b5a97464dd851910efc3002d96/ckpts"
         pipeline = super(TrellisImageTo3DPipeline, TrellisImageTo3DPipeline).from_pretrained(path)
         new_pipeline = TrellisImageTo3DPipeline()
         new_pipeline.__dict__ = pipeline.__dict__
@@ -150,34 +146,17 @@ class TrellisImageTo3DPipeline(Pipeline):
         patchtokens = F.layer_norm(features, features.shape[-1:])
         return patchtokens
         
-    def get_cond(self, image: Union[torch.Tensor, list[Image.Image]], env_light_tensor: Union[torch.Tensor, List[torch.Tensor]]) -> dict:
+    def get_cond(self, image: Union[torch.Tensor, list[Image.Image]]) -> dict:
         """
         Get the conditioning information for the model.
 
         Args:
             image (Union[torch.Tensor, list[Image.Image]]): The image prompts.
-            env_light_tensor (Union[torch.Tensor, List[torch.Tensor]]): The environment light.
 
         Returns:
             dict: The conditioning information
         """
-        cond_img = self.encode_image(image) # [64, 1374, 1024]
-        # breakpoint()
-        with torch.enable_grad():
-            # breakpoint()
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            # EXREmbedder = EXREmbedder.to(device)
-            # cond_envlight = EXREmbedder(env_light_tensor)
-            env_light_tensor = env_light_tensor.to(device) # [1, 3, 2048, 4096]
-            # cond_envlight = EXREmbedder(in_channels=3, embed_dim=256).to(self.device)            (env_light_tensor) # [1, 3, 2048, 4096]
-            modulator = EnvLightModulator(feature_dim=64).to(device)
-            cond_envlight = modulator(env_light_tensor)
-            # cond_envlight = EnvLightModulator(64, env_light_tensor).to(self.device) 
-
-            
-        # breakpoint()
-        cond = torch.concat([cond_img, cond_envlight], dim=1)
-
+        cond = self.encode_image(image)
         neg_cond = torch.zeros_like(cond)
         return {
             'cond': cond,
@@ -233,12 +212,66 @@ class TrellisImageTo3DPipeline(Pipeline):
             dict: The decoded structured latent.
         """
         ret = {}
-        if 'mesh' in formats:
-            ret['mesh'] = self.models['slat_decoder_mesh'](slat)
+        # breakpoint() # slat: trellis.modules.sparse.basic.SparseTensor
+
+        # if 'mesh' in formats:
+        #     ret['mesh'] = self.models['slat_decoder_mesh'](slat) # trellis.representations.mesh.cube2mesh.MeshExtractResult, model = SLatMeshDecoder
         if 'gaussian' in formats:
-            ret['gaussian'] = self.models['slat_decoder_gs'](slat)
+            print(self.models['slat_decoder_gs'])
+            ret['gaussian'] = self.models['slat_decoder_gs'](slat) # trellis.representations.gaussian.gaussian_model.Gaussian, model = SLatGaussianDecoder
         if 'radiance_field' in formats:
-            ret['radiance_field'] = self.models['slat_decoder_rf'](slat)
+            ret['radiance_field'] = self.models['slat_decoder_rf'](slat) # trellis.representations.radiance_field.strivec.Strivec, model = SLatRadianceFieldDecoder
+        return ret
+    
+    def decode_slat_w_light(
+        self,
+        slat: sp.SparseTensor,
+        env_light_tensor: torch.Tensor,
+        formats: List[str] = ['mesh', 'gaussian', 'radiance_field'],
+    ) -> dict:
+        """
+        Decode the structured latent with environment light.
+
+        Args:
+            slat (sp.SparseTensor): The structured latent.
+            env_light_tensor: Encoded light tensor, to be injected into the slat.
+            formats (List[str]): The formats to decode the structured latent to.
+
+        Returns:
+            dict: The decoded structured latent.
+        """
+        ret = {}
+        # breakpoint() # slat: trellis.modules.sparse.basic.SparseTensor
+        with torch.enable_grad():
+            # self.models['env_light_decoder'] = self.models['env_light_decoder'].to(self.device)
+            # self.models['env_light_decoder'] = EnvLightEncoder().to(self.device)
+            # dirs = torch.randn(slat.feats.shape[0], 3) # 先随机生成方向
+            # env_light_sp_feat = self.models['env_light_decoder'](env_light_tensor, dirs) # [N, 8]
+            # breakpoint()
+            attn_module = SparseLightAttention(
+                feat_dim=8,
+                light_feat_dim=3,
+                coord_dim=3,
+                embed_dim=64,
+                out_dim=8,
+                H=2048,
+                W=4096
+            ).to(self.device) # H, W
+            new_feats = attn_module(slat.coords, slat.feats, env_light_tensor)
+            slat = slat.replace(new_feats) # [N, 8]
+            # slat = slat.replace(new_feats)  # [N, 16]
+
+        # if 'mesh' in formats:
+        #     ret['mesh'] = self.models['slat_decoder_mesh'](slat) # trellis.representations.mesh.cube2mesh.MeshExtractResult, model = SLatMeshDecoder
+        if 'gaussian' in formats:
+            # breakpoint()
+            ret['gaussian'] = self.models['slat_decoder_gs'](slat) # trellis.representations.gaussian.gaussian_model.Gaussian, model = SLatGaussianDecoder
+        # if 'radiance_field' in formats:
+        #     ret['radiance_field'] = self.models['slat_decoder_rf'](slat) # trellis.representations.radiance_field.strivec.Strivec, model = SLatRadianceFieldDecoder
+        # breakpoint()
+        dot = make_dot(ret['gaussian'][0].get_features, params=dict(self.models['slat_decoder_gs'].named_parameters()), show_attrs=False, show_saved=False)
+        dot.render("debug/decoder_computation_graph", format="png")
+        
         return ret
     
     def sample_slat(
@@ -252,16 +285,16 @@ class TrellisImageTo3DPipeline(Pipeline):
         
         Args:
             cond (dict): The conditioning information.
-            coords (torch.Tensor): The coordinates of the sparse structure.
+            coords (torch.Tensor): The coordinates of the sparse structure. [N, 4] with [N, 0] represents batch idx and [N, 1:] means xyz occupancy.
             sampler_params (dict): Additional parameters for the sampler.
         """
         # Sample structured latent
-        flow_model = self.models['slat_flow_model']
+        flow_model = self.models['slat_flow_model'] # in_channels=8
         # breakpoint()
         noise = sp.SparseTensor(
-            feats=torch.randn(coords.shape, flow_model.in_channels).to(self.device),
+            feats=torch.randn(coords.shape[0], flow_model.in_channels).to(self.device),
             coords=coords,
-        )  # [0, 8] #[0, 4]
+        ) # [1, 8]
         sampler_params = {**self.slat_sampler_params, **sampler_params}
         slat = self.slat_sampler.sample(
             flow_model,
@@ -269,7 +302,7 @@ class TrellisImageTo3DPipeline(Pipeline):
             **cond,
             **sampler_params,
             verbose=True
-        ).samples
+        ).samples # [1, 8]
 
         std = torch.tensor(self.slat_normalization['std'])[None].to(slat.device)
         mean = torch.tensor(self.slat_normalization['mean'])[None].to(slat.device)
@@ -294,7 +327,6 @@ class TrellisImageTo3DPipeline(Pipeline):
     def run(
         self,
         image: Image.Image,
-        env_light_tensor: Union[torch.Tensor, List[torch.Tensor]], 
         num_samples: int = 1,
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
@@ -316,14 +348,9 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         if preprocess_image:
             image = self.preprocess_image(image)
-        
-        # cond = self.get_cond(image, env_light_tensor)
-        cond = self.get_cond(image)
+        cond = self.get_cond([image])
         torch.manual_seed(seed)
-        print("here is sparse structure")
         coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params)
-        # breakpoint()
-        print("here is slat")
         slat = self.sample_slat(cond, coords, slat_sampler_params)
         return self.decode_slat(slat, formats)
 
@@ -388,7 +415,7 @@ class TrellisImageTo3DPipeline(Pipeline):
     def run_multi_image(
         self,
         images: List[Image.Image],
-        env_light_tensor: List[torch.Tensor],
+        env_light_tensor: torch.Tensor, 
         num_samples: int = 1,
         seed: int = 42,
         sparse_structure_sampler_params: dict = {},
@@ -402,7 +429,6 @@ class TrellisImageTo3DPipeline(Pipeline):
 
         Args:
             images (List[Image.Image]): The multi-view images of the assets
-            env_light (List[torch.Tensor]): Tensor of the environment light.
             num_samples (int): The number of samples to generate.
             sparse_structure_sampler_params (dict): Additional parameters for the sparse structure sampler.
             slat_sampler_params (dict): Additional parameters for the structured latent sampler.
@@ -410,15 +436,19 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         if preprocess_image:
             images = [self.preprocess_image(image) for image in images]
-        cond = self.get_cond(images, env_light_tensor)
+        cond = self.get_cond(images)
         cond['neg_cond'] = cond['neg_cond'][:1]
         torch.manual_seed(seed)
         ss_steps = {**self.sparse_structure_sampler_params, **sparse_structure_sampler_params}.get('steps')
         with self.inject_sampler_multi_image('sparse_structure_sampler', len(images), ss_steps, mode=mode):
-            print("here we sample strucure sparse")
             coords = self.sample_sparse_structure(cond, num_samples, sparse_structure_sampler_params)
         slat_steps = {**self.slat_sampler_params, **slat_sampler_params}.get('steps')
         with self.inject_sampler_multi_image('slat_sampler', len(images), slat_steps, mode=mode):
-            print("here we sample slat")
             slat = self.sample_slat(cond, coords, slat_sampler_params)
+        
+        with torch.enable_grad(): 
+            if env_light_tensor is not None:
+                env_light_tensor = env_light_tensor.to(self.device)
+                return self.decode_slat_w_light(slat, env_light_tensor, formats)
+
         return self.decode_slat(slat, formats)

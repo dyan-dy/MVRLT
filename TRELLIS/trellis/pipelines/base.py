@@ -45,16 +45,21 @@ class Pipeline:
             print("📕", k, v)
             count += 1
             print("🔢 count", count)
-            try:
-                print("we are in models")
-                print("path", path)
-                print("v", v)
+
+            if k=="slat_decoder_gs":
+                print("🕵️‍ we come to slat_decoder_gs in pipeline and need to train this model.")
                 _models[k] = models.from_pretrained(f"{path}/{v}")
-                print("😀 finished")
-            except:
-                print("we are in not models")
-                print("v", v)
-                _models[k] = models.from_pretrained(v)
+            else:
+                try:
+                    print("we are in models")
+                    print("path", path)
+                    print("v", v)
+                    _models[k] = models.from_pretrained(f"{path}/{v}")
+                    print("😀 finished")
+                except:
+                    print("we are in not models")
+                    print("v", v)
+                    _models[k] = models.from_pretrained(v)
 
         new_pipeline = Pipeline(_models)
         new_pipeline._pretrained_args = args

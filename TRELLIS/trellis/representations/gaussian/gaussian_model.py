@@ -93,7 +93,7 @@ class Gaussian:
     
     def get_covariance(self, scaling_modifier = 1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation + self.rots_bias[None, :])
-    
+       
     def from_scaling(self, scales):
         scales = torch.sqrt(torch.square(scales) - self.mininum_kernel_size ** 2)
         self._scaling = self.inverse_scaling_activation(scales) - self.scale_bias

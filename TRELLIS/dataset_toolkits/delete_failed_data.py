@@ -30,7 +30,7 @@ def find_c_folders_with_few_files(root_dir, file_threshold=65):
     return result
 
 # 使用示例
-root_dir = 'image_datasets/already_done/rank3'#'image_datasets/HSSD'  # 根目录A
+root_dir = 'image_datasets/HSSD'#'image_datasets/already_done/rank3'  # 根目录A
 output = find_c_folders_with_few_files(root_dir)
 
 # 保存结果到txt

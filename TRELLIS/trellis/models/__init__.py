@@ -58,7 +58,18 @@ def from_pretrained(path: str, **kwargs):
     print("🔍", os.path.exists(f"{path}.json"))
     print("🔍", os.path.exists(f"{path}.safetensors"))
     is_local = os.path.exists(f"{path}.json") and os.path.exists(f"{path}.safetensors")
-
+    
+    if 'slat_dec_gs' in path:
+        print("🔁 we are matching existing keys with scratch model...")
+        # from .structured_latent_vae import SLatGaussianDecoder
+        config_file = f"{path}.json"
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        model = __getattr__(config['name'])(**config['args'], **kwargs)
+        for param in model.parameters():
+            param.requires_grad_(True)
+        return model
+    
     if is_local:
         print("Loading from local path")
         config_file = f"{path}.json"

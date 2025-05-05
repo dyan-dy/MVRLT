@@ -108,6 +108,8 @@ class SparseTransformerBase(nn.Module):
         self.apply(_basic_init)
 
     def forward(self, x: sp.SparseTensor) -> sp.SparseTensor:
+        # breakpoint()
+        # x_prime = nn.Linear()(x)
         h = self.input_layer(x)
         if self.pe_mode == "ape":
             h = h + self.pos_embedder(x.coords[:, 1:])

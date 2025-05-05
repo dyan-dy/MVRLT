@@ -18,6 +18,8 @@ from .sh_utils import eval_sh
 import torch.nn.functional as F
 from easydict import EasyDict as edict
 
+import wandb
+
 
 def intrinsics_to_projection(
         intrinsics: torch.Tensor,
@@ -53,6 +55,8 @@ def render(viewpoint_camera, pc : Gaussian, pipe, bg_color : torch.Tensor, scali
     
     Background tensor (bg_color) must be on GPU!
     """
+    # print("let's check the gaussian render")
+    # breakpoint()
     # lazy import
     if 'GaussianRasterizer' not in globals():
         from diff_gaussian_rasterization import GaussianRasterizer, GaussianRasterizationSettings
@@ -130,7 +134,14 @@ def render(viewpoint_camera, pc : Gaussian, pipe, bg_color : torch.Tensor, scali
         scales = scales,
         rotations = rotations,
         cov3D_precomp = cov3D_precomp
-    )
+    ) # torch.Size([3, 512, 512]) torch.float32
+
+    print("let's check the gaussian render")
+    # breakpoint()
+    # print("shape of rendered_image", rendered_image.shape)
+    # print("shape of radii", radii.shape)
+    wandb.log({"rendered_image": wandb.Image(rendered_image.permute(1, 2, 0).detach().cpu().numpy())})
+    # wandb.log({"radii": wandb.Image(radii[0].permute(1, 2, 0).detach().cpu().numpy())})
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
@@ -228,4 +239,6 @@ class GaussianRenderer:
         ret = edict({
             'color': render_ret['render']
         })
+        # breakpoint()
+        # print("final render shape", render_ret['render'].shape)
         return ret

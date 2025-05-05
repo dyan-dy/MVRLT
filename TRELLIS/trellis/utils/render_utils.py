@@ -9,6 +9,8 @@ from ..representations import Octree, Gaussian, MeshExtractResult
 from ..modules import sparse as sp
 from .random_utils import sphere_hammersley_sequence
 
+import wandb
+
 
 def yaw_pitch_r_fov_to_extrinsics_intrinsics(yaws, pitchs, rs, fovs):
     is_list = isinstance(yaws, list)
@@ -50,6 +52,7 @@ def get_renderer(sample, **kwargs):
         renderer.rendering_options.ssaa = kwargs.get('ssaa', 4)
         renderer.pipe.primitive = sample.primitive
     elif isinstance(sample, Gaussian):
+        # print("Gaussian render")
         renderer = GaussianRenderer()
         renderer.rendering_options.resolution = kwargs.get('resolution', 512)
         renderer.rendering_options.near = kwargs.get('near', 0.8)
@@ -70,6 +73,7 @@ def get_renderer(sample, **kwargs):
 
 
 def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=None, verbose=True, **kwargs):
+    # print("getting renderer ...")
     renderer = get_renderer(sample, **options)
     rets = {}
     for j, (extr, intr) in tqdm(enumerate(zip(extrinsics, intrinsics)), desc='Rendering', disable=not verbose):
@@ -78,6 +82,7 @@ def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=N
             if 'normal' not in rets: rets['normal'] = []
             rets['normal'].append(np.clip(res['normal'].detach().cpu().numpy().transpose(1, 2, 0) * 255, 0, 255).astype(np.uint8))
         else:
+            # print("not mesh, rendering ...")
             res = renderer.render(sample, extr, intr, colors_overwrite=colors_overwrite)
             if 'color' not in rets: rets['color'] = []
             if 'depth' not in rets: rets['depth'] = []
@@ -88,10 +93,13 @@ def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=N
                 rets['depth'].append(res['depth'].detach().cpu().numpy())
             else:
                 rets['depth'].append(None)
+        breakpoint()
+        wandb.log({"rendered_frames": wandb.Image(rets['color'][0])})
     return rets
 
 
 def render_video(sample, resolution=512, bg_color=(0, 0, 0), num_frames=300, r=2, fov=40, **kwargs):
+    print("🎥 render video ...")
     yaws = torch.linspace(0, 2 * 3.1415, num_frames)
     pitch = 0.25 + 0.5 * torch.sin(torch.linspace(0, 2 * 3.1415, num_frames))
     yaws = yaws.tolist()
