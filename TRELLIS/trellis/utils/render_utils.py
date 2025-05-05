@@ -87,14 +87,17 @@ def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=N
             if 'color' not in rets: rets['color'] = []
             if 'depth' not in rets: rets['depth'] = []
             rets['color'].append(np.clip(res['color'].detach().cpu().numpy().transpose(1, 2, 0) * 255, 0, 255).astype(np.uint8))
+            print(res['color'].shape)
+            wandb.log({"res_images": wandb.Image(res['color']).detach().cpu().numpy().transpose(1, 2, 0)})
+            wandb.log({"rendered_frames": wandb.Image(rets['color'][-1])})
             if 'percent_depth' in res:
                 rets['depth'].append(res['percent_depth'].detach().cpu().numpy())
             elif 'depth' in res:
                 rets['depth'].append(res['depth'].detach().cpu().numpy())
             else:
                 rets['depth'].append(None)
-        breakpoint()
-        wandb.log({"rendered_frames": wandb.Image(rets['color'][0])})
+        # breakpoint()
+        
     return rets
 
 

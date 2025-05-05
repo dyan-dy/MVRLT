@@ -59,7 +59,8 @@ def from_pretrained(path: str, **kwargs):
     print("🔍", os.path.exists(f"{path}.safetensors"))
     is_local = os.path.exists(f"{path}.json") and os.path.exists(f"{path}.safetensors")
     
-    if 'slat_dec_gs' in path:
+    # if 'slat_dec_gs' in path:
+    if "hello hi" in path:
         print("🔁 we are matching existing keys with scratch model...")
         # from .structured_latent_vae import SLatGaussianDecoder
         config_file = f"{path}.json"

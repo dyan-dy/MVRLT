@@ -242,23 +242,18 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         ret = {}
         # breakpoint() # slat: trellis.modules.sparse.basic.SparseTensor
-        with torch.enable_grad():
-            # self.models['env_light_decoder'] = self.models['env_light_decoder'].to(self.device)
-            # self.models['env_light_decoder'] = EnvLightEncoder().to(self.device)
-            # dirs = torch.randn(slat.feats.shape[0], 3) # 先随机生成方向
-            # env_light_sp_feat = self.models['env_light_decoder'](env_light_tensor, dirs) # [N, 8]
-            # breakpoint()
-            attn_module = SparseLightAttention(
-                feat_dim=8,
-                light_feat_dim=3,
-                coord_dim=3,
-                embed_dim=64,
-                out_dim=8,
-                H=2048,
-                W=4096
-            ).to(self.device) # H, W
-            new_feats = attn_module(slat.coords, slat.feats, env_light_tensor)
-            slat = slat.replace(new_feats) # [N, 8]
+        # with torch.enable_grad():
+        #     attn_module = SparseLightAttention(
+        #         feat_dim=8,
+        #         light_feat_dim=3,
+        #         coord_dim=3,
+        #         embed_dim=64,
+        #         out_dim=8,
+        #         H=2048,
+        #         W=4096
+        #     ).to(self.device) # H, W
+        #     new_feats = attn_module(slat.coords, slat.feats, env_light_tensor)
+        #     slat = slat.replace(new_feats) # [N, 8]
             # slat = slat.replace(new_feats)  # [N, 16]
 
         # if 'mesh' in formats:
@@ -268,9 +263,9 @@ class TrellisImageTo3DPipeline(Pipeline):
             ret['gaussian'] = self.models['slat_decoder_gs'](slat) # trellis.representations.gaussian.gaussian_model.Gaussian, model = SLatGaussianDecoder
         # if 'radiance_field' in formats:
         #     ret['radiance_field'] = self.models['slat_decoder_rf'](slat) # trellis.representations.radiance_field.strivec.Strivec, model = SLatRadianceFieldDecoder
-        # breakpoint()
-        dot = make_dot(ret['gaussian'][0].get_features, params=dict(self.models['slat_decoder_gs'].named_parameters()), show_attrs=False, show_saved=False)
-        dot.render("debug/decoder_computation_graph", format="png")
+        # # breakpoint()
+        # dot = make_dot(ret['gaussian'][0].get_features, params=dict(self.models['slat_decoder_gs'].named_parameters()), show_attrs=False, show_saved=False)
+        # dot.render("debug/decoder_computation_graph", format="png")
         
         return ret
     
@@ -449,6 +444,7 @@ class TrellisImageTo3DPipeline(Pipeline):
         with torch.enable_grad(): 
             if env_light_tensor is not None:
                 env_light_tensor = env_light_tensor.to(self.device)
-                return self.decode_slat_w_light(slat, env_light_tensor, formats)
+                # return self.decode_slat_w_light(slat, env_light_tensor, formats)
+                return self.decode_slat(slat, formats)
 
         return self.decode_slat(slat, formats)

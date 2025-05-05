@@ -5,7 +5,7 @@ print("setting up sparse backend")
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'           # Set the GPU device to use. Default is '0'.
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'           # Set the GPU device to use. Default is '0'.
 
 import cv2
 import torch
@@ -24,7 +24,7 @@ from trellis.trainers.relit_trainer import RelitTrainer
 
 import wandb
 
-wandb.init(project="mvrlt", name="debug")
+wandb.init(project="mvrlt", name="wo_attention")
 
 # Load a pipeline from a model folder or a Hugging Face model hub.
 # print("🚀 loading pipeline")
@@ -95,7 +95,8 @@ with torch.enable_grad():
 
 
 # breakpoint()
-video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
+# video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
+video_gs = render_utils.render_video(gs_instance)['color']
 # video_mesh = render_utils.render_video(outputs['mesh'][0])['normal']
 # video = [np.concatenate([frame_gs, frame_mesh], axis=1) for frame_gs, frame_mesh in zip(video_gs, video_mesh)]
 imageio.mimsave("debug/sample_train.mp4", video_gs, fps=30)

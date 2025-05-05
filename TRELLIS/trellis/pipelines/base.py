@@ -46,7 +46,7 @@ class Pipeline:
             count += 1
             print("🔢 count", count)
 
-            if k=="slat_decoder_gs":
+            if k=="hello hi": # "slat_decoder_gs":
                 print("🕵️‍ we come to slat_decoder_gs in pipeline and need to train this model.")
                 _models[k] = models.from_pretrained(f"{path}/{v}")
             else:
