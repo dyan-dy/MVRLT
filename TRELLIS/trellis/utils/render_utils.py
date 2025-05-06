@@ -93,7 +93,7 @@ def render_frames(sample, extrinsics, intrinsics, options={}, colors_overwrite=N
                 rets['depth'].append(res['depth'].detach().cpu().numpy())
             else:
                 rets['depth'].append(None)
-        breakpoint()
+        # breakpoint()
         wandb.log({"rendered_frames": wandb.Image(rets['color'][0])})
     return rets
 

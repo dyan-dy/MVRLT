@@ -76,16 +76,12 @@ outputs = pipeline.run_multi_image(
 # render 3d gaussian at certain viewpoint to screen for supervision
 with torch.enable_grad():
     gs_instance = outputs['gaussian'][0]  # already on cuda
-    # relit_trainer = RelitTrainer()
-    # relit_trainer(gt_images, gs_instance)
-    # relighted_gs = render(gs)
-    # compare(relighted_gs, gt_image)
     trainer = RelitTrainer(
         gs=gs_instance,
         gt_images=images,
         poses=poses,
         render_type="default",
-        epochs=100,
+        epochs=10,
         lr=1e-2,
         batch_size=1,
         loss_type='mse'
@@ -95,7 +91,10 @@ with torch.enable_grad():
 
 
 # breakpoint()
-video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
+# video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
+breakpoint()
+video_gs = render_utils.render_video(gs_instance)['color']
+
 # video_mesh = render_utils.render_video(outputs['mesh'][0])['normal']
 # video = [np.concatenate([frame_gs, frame_mesh], axis=1) for frame_gs, frame_mesh in zip(video_gs, video_mesh)]
 imageio.mimsave("debug/sample_train.mp4", video_gs, fps=30)

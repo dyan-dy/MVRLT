@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from typing import List
 from PIL import Image
 from ..utils.render_utils import get_renderer, yaw_pitch_r_fov_to_extrinsics_intrinsics
+from ..representations.gaussian.loss_utils import l1_loss, ssim
+from ..trainers.vae.structured_latent_vae_gaussian import SLatVaeGaussianTrainer
 import wandb
 
 
@@ -45,7 +47,7 @@ def get_all_trainable_params(gs):
         params.append(gs._features_rest)
 
     if gs._opacity is not None:
-        gs._opacity = torch.nn.Parameter(gs._opacity, requires_grad=False)
+        gs._opacity = torch.nn.Parameter(gs._opacity, requires_grad=True)
         params.append(gs._opacity)
 
     if gs._scaling is not None:
@@ -60,73 +62,114 @@ def get_all_trainable_params(gs):
 
 
 
-class RelitTrainer:
-    def __init__(self, gs, gt_images: List[Image.Image], poses: List[dict],
-                 render_type='default',
-                 epochs=5, lr=1e-3, batch_size=4, loss_type='mse'):
-        self.gs = gs
-        self.gt_images = gt_images
-        self.poses = poses
-        self.render_type = render_type
-        self.epochs = epochs
-        self.lr = lr
-        self.batch_size = batch_size
-        self.loss_type = loss_type
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+class RelitTrainer(SLatVaeGaussianTrainer):
+    """
+    Trainer for structured latent VAE.
+    
+    Args:
+        models (dict[str, nn.Module]): Models to train.
+        dataset (torch.utils.data.Dataset): Dataset.
+        output_dir (str): Output directory.
+        load_dir (str): Load directory.
+        step (int): Step to load.
+        batch_size (int): Batch size.
+        batch_size_per_gpu (int): Batch size per GPU. If specified, batch_size will be ignored.
+        batch_split (int): Split batch with gradient accumulation.
+        max_steps (int): Max steps.
+        optimizer (dict): Optimizer config.
+        lr_scheduler (dict): Learning rate scheduler config.
+        elastic (dict): Elastic memory management config.
+        grad_clip (float or dict): Gradient clip config.
+        ema_rate (float or list): Exponential moving average rates.
+        fp16_mode (str): FP16 mode.
+            - None: No FP16.
+            - 'inflat_all': Hold a inflated fp32 master param for all params.
+            - 'amp': Automatic mixed precision.
+        fp16_scale_growth (float): Scale growth for FP16 gradient backpropagation.
+        finetune_ckpt (dict): Finetune checkpoint.
+        log_param_stats (bool): Log parameter stats.
+        i_print (int): Print interval.
+        i_log (int): Log interval.
+        i_sample (int): Sample interval.
+        i_save (int): Save interval.
+        i_ddpcheck (int): DDP check interval.
+        
+        loss_type (str): Loss type. Can be 'l1', 'l2'
+        lambda_ssim (float): SSIM loss weight.
+        lambda_lpips (float): LPIPS loss weight.
+        lambda_kl (float): KL loss weight.
+        regularizations (dict): Regularization config.
+    """
+    
 
-        self.dataset = PoseGTImageDataset(gt_images, poses)
-        self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
-
-        self.criterion = nn.MSELoss() if self.loss_type == 'mse' else nn.L1Loss()
-        # self.optimizer = optim.Adam(get_trainable_appearance_params(self.gs), lr=self.lr)
-        # breakpoint()
-        self.params = get_all_trainable_params(self.gs)
-        self.optimizer = optim.Adam(self.params, lr=self.lr)
-        self.scheduler = StepLR(self.optimizer, step_size=1000, gamma=0.5)
 
 
-    def train(self):
-        for epoch in range(self.epochs):
-            total_loss = 0
-            # breakpoint()
-            for gt, pose in self.loader:
-                gt = gt[0].to(self.device) # batch_size only = 1
-                # print("type of gt:", type(gt))
-                # print("type of pose:", type(pose))
-                extr, intr = yaw_pitch_r_fov_to_extrinsics_intrinsics(pose['yaw'].item(), pose['pitch'].item(), pose['radius'].item(), pose['fov'].item())
-                render = get_renderer(self.gs)
-                pred = render.render(self.gs, extr, intr)['color']
-                # print("type of pred:", type(pred))
+    # def __init__(self, gs, gt_images: List[Image.Image], poses: List[dict],
+    #              render_type='default',
+    #              epochs=5, lr=1e-3, batch_size=4, loss_type='mse'):
+    #     self.gs = gs
+    #     self.gt_images = gt_images
+    #     self.poses = poses
+    #     self.render_type = render_type
+    #     self.epochs = epochs
+    #     self.lr = lr
+    #     self.batch_size = batch_size
+    #     self.loss_type = loss_type
+    #     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-                # pred = self.gs.render(x, render_type=self.render_type)
-                # print("shape of pred:", pred.shape)
-                # print("shape of gt:", gt.shape)
-                loss = self.criterion(pred, gt)
+    #     self.dataset = PoseGTImageDataset(gt_images, poses)
+    #     self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
 
-                self.optimizer.zero_grad()
-                loss.backward(retain_graph=True)
-                torch.nn.utils.clip_grad_norm_(self.params, max_norm=1.0)
-                self.optimizer.step()
-                total_loss += loss.item()
+    #     self.criterion = nn.MSELoss() if self.loss_type == 'mse' else nn.L1Loss()
+    #     # self.optimizer = optim.Adam(get_trainable_appearance_params(self.gs), lr=self.lr)
+    #     # breakpoint()
+    #     self.params = get_all_trainable_params(self.gs)
+    #     self.optimizer = optim.Adam(self.params, lr=self.lr)
+    #     self.scheduler = StepLR(self.optimizer, step_size=1000, gamma=0.5)
 
-            print(f"[Epoch {epoch+1}/{self.epochs}] Loss: {total_loss/len(self.loader):.4f}")
 
-            # wandb record
-            avg_loss = total_loss / len(self.loader)
-            wandb.log({"loss": avg_loss, "epoch": epoch + 1})
+    # def train(self):
+    #     for epoch in range(self.epochs):
+    #         total_loss = 0
+    #         # breakpoint()
+    #         for gt, pose in self.loader:
+    #             gt = gt[0].to(self.device) # batch_size only = 1
+    #             # print("type of gt:", type(gt))
+    #             # print("type of pose:", type(pose))
+    #             extr, intr = yaw_pitch_r_fov_to_extrinsics_intrinsics(pose['yaw'].item(), pose['pitch'].item(), pose['radius'].item(), pose['fov'].item())
+    #             render = get_renderer(self.gs)
+    #             pred = render.render(self.gs, extr, intr)['color']
+    #             # print("type of pred:", type(pred))
 
-            pred_img = pred.permute(1, 2, 0).detach().cpu().numpy()
-            gt_img = gt.permute(1, 2, 0).detach().cpu().numpy()
-            images = [
-                wandb.Image(pred_img, caption="Rendered"),
-                wandb.Image(gt_img, caption="GT")
-            ]
-            wandb.log({"Comparison": images, "epoch": epoch + 1})
+    #             # pred = self.gs.render(x, render_type=self.render_type)
+    #             # print("shape of pred:", pred.shape)
+    #             # print("shape of gt:", gt.shape)
+    #             loss = self.criterion(pred, gt)
 
-            # Log the current learning rate
-            current_lr = self.optimizer.param_groups[0]['lr']
-            wandb.log({"learning_rate": current_lr, "epoch": epoch + 1})
+    #             self.optimizer.zero_grad()
+    #             loss.backward(retain_graph=True)
+    #             torch.nn.utils.clip_grad_norm_(self.params, max_norm=1.0)
+    #             self.optimizer.step()
+    #             total_loss += loss.item()
 
-            # self._compare(pred, gt)
+    #         print(f"[Epoch {epoch+1}/{self.epochs}] Loss: {total_loss/len(self.loader):.4f}")
 
-            self.scheduler.step()
+    #         # wandb record
+    #         avg_loss = total_loss / len(self.loader)
+    #         wandb.log({"loss": avg_loss, "epoch": epoch + 1})
+
+    #         pred_img = pred.permute(1, 2, 0).detach().cpu().numpy()
+    #         gt_img = gt.permute(1, 2, 0).detach().cpu().numpy()
+    #         images = [
+    #             wandb.Image(pred_img, caption="Rendered"),
+    #             wandb.Image(gt_img, caption="GT")
+    #         ]
+    #         wandb.log({"Comparison": images, "epoch": epoch + 1})
+
+    #         # Log the current learning rate
+    #         current_lr = self.optimizer.param_groups[0]['lr']
+    #         wandb.log({"learning_rate": current_lr, "epoch": epoch + 1})
+
+    #         # self._compare(pred, gt)
+
+    #         self.scheduler.step()

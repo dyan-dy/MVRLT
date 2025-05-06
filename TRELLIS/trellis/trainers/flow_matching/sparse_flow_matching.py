@@ -15,6 +15,7 @@ from .flow_matching import FlowMatchingTrainer
 from .mixins.classifier_free_guidance import ClassifierFreeGuidanceMixin
 from .mixins.text_conditioned import TextConditionedMixin
 from .mixins.image_conditioned import ImageConditionedMixin
+from .mixins.envmap_conditioned import EnvmapConditionedMixin
 
 
 class SparseFlowMatchingTrainer(FlowMatchingTrainer):
@@ -282,5 +283,44 @@ class ImageConditionedSparseFlowMatchingCFGTrainer(ImageConditionedMixin, Sparse
         sigma_min (float): Minimum noise level.
         p_uncond (float): Probability of dropping conditions.
         image_cond_model (str): Image conditioning model.
+    """
+    pass
+
+class EnvmapConditionedSparseFlowMatchingCFGTrainer(EnvmapConditionedMixin, SparseFlowMatchingCFGTrainer):
+    """
+    Trainer for sparse image-conditioned diffusion model with flow matching objective and classifier-free guidance.
+    
+    Args:
+        models (dict[str, nn.Module]): Models to train.
+        dataset (torch.utils.data.Dataset): Dataset.
+        output_dir (str): Output directory.
+        load_dir (str): Load directory.
+        step (int): Step to load.
+        batch_size (int): Batch size.
+        batch_size_per_gpu (int): Batch size per GPU. If specified, batch_size will be ignored.
+        batch_split (int): Split batch with gradient accumulation.
+        max_steps (int): Max steps.
+        optimizer (dict): Optimizer config.
+        lr_scheduler (dict): Learning rate scheduler config.
+        elastic (dict): Elastic memory management config.
+        grad_clip (float or dict): Gradient clip config.
+        ema_rate (float or list): Exponential moving average rates.
+        fp16_mode (str): FP16 mode.
+            - None: No FP16.
+            - 'inflat_all': Hold a inflated fp32 master param for all params.
+            - 'amp': Automatic mixed precision.
+        fp16_scale_growth (float): Scale growth for FP16 gradient backpropagation.
+        finetune_ckpt (dict): Finetune checkpoint.
+        log_param_stats (bool): Log parameter stats.
+        i_print (int): Print interval.
+        i_log (int): Log interval.
+        i_sample (int): Sample interval.
+        i_save (int): Save interval.
+        i_ddpcheck (int): DDP check interval.
+
+        t_schedule (dict): Time schedule for flow matching.
+        sigma_min (float): Minimum noise level.
+        p_uncond (float): Probability of dropping conditions.
+        envmap_cond_model (str): Envmap conditioning model.
     """
     pass
