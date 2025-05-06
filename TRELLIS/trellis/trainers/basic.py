@@ -95,6 +95,7 @@ class BasicTrainer(Trainer):
             self.training_models = self.models
 
         # Build master params
+        # breakpoint()
         self.model_params = sum(
             [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
         , [])
@@ -115,6 +116,7 @@ class BasicTrainer(Trainer):
             self.ema_params = [copy.deepcopy(self.master_params) for _ in self.ema_rate]
 
         # Initialize optimizer
+        # breakpoint()
         if hasattr(torch.optim, self.optimizer_config['name']):
             self.optimizer = getattr(torch.optim, self.optimizer_config['name'])(self.master_params, **self.optimizer_config['args'])
         else:

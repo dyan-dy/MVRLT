@@ -15,12 +15,16 @@ import Imath
 import json
 import imageio
 from PIL import Image
+from safetensors.torch import load_file
+from trellis import models, datasets, trainers
 print("import pipeline")
 from trellis.pipelines import TrellisImageTo3DPipeline
 print("import utils")
 from trellis.utils import render_utils
 from trellis.utils.encoder_envmap import read_exr_as_tensor
-from trellis.trainers.relit_trainer import RelitTrainer
+from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
+from trellis.models.structured_latent_vae.decoder_gs import SLatGaussianDecoder, ElasticSLatGaussianDecoder
+from trellis.models.structured_latent_vae.encoder import ElasticSLatEncoder
 
 import wandb
 
@@ -80,18 +84,43 @@ with torch.enable_grad():
     # relit_trainer(gt_images, gs_instance)
     # relighted_gs = render(gs)
     # compare(relighted_gs, gt_image)
-    trainer = RelitTrainer(
-        gs=gs_instance,
-        gt_images=images,
-        poses=poses,
-        render_type="default",
-        epochs=100,
-        lr=1e-2,
-        batch_size=1,
-        loss_type='mse'
-    )
-    trainer.train()
+    # trainer = RelitTrainer(
+    #     gs=gs_instance,
+    #     gt_images=images,
+    #     poses=poses,
+    #     render_type="default",
+    #     epochs=100,
+    #     lr=1e-2,
+    #     batch_size=1,
+    #     loss_type='mse'
+    # )
+    # trainer.train()
+    with open("/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/configs/vae/slat_vae_enc_dec_gs_swin8_B_64l8_fp16.json", "r") as f:
+        config = json.load(f)
 
+    model_decoder = ElasticSLatGaussianDecoder(**config["models"]["decoder"]["args"]).to('cuda')
+    model_encoder = ElasticSLatEncoder(**config["models"]["encoder"]["args"]).to('cuda')
+    refine_model_dict = {"encoder": model_encoder, "decoder": model_decoder} # 在这得加载整个flow模型
+
+
+    checkpoint_path = "/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/cache/25e0d31ffbebe4b5a97464dd851910efc3002d96/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16.safetensors"
+    checkpoint = load_file(checkpoint_path, device="cuda")
+    model_decoder.load_state_dict(checkpoint)
+    print("✅ Successfully loaded .safetensors checkpoint.")
+
+    dataset = PoseGTImageDataset(images, poses)
+
+    trainer = getattr(trainers, config["trainer"]["name"])(refine_model_dict, dataset, **config["trainer"]["args"], output_dir='debug', load_dir=None, step=100000)
+    # trainer = RelitTrainer(
+    #     models = {'SLatGaussianDecoder': model},
+    #     dataset = dataset,
+    #     output_dir = "debug",
+    #     load_dir = None,  # load checkpoint?
+    #     batch_size = 1,
+    #     step = 1000,
+    #     max_steps = 1000
+    # )
+    trainer.run()
 
 
 # breakpoint()
