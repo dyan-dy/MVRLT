@@ -189,7 +189,7 @@ class Trainer:
             return sample
 
     @torch.no_grad()
-    def snapshot_dataset(self, num_samples=100):
+    def snapshot_dataset(self, num_samples=1):
         """
         Sample images from the dataset.
         """
@@ -200,6 +200,7 @@ class Trainer:
             shuffle=True,
             collate_fn=self.dataset.collate_fn if hasattr(self.dataset, 'collate_fn') else None,
         )
+        # breakpoint()
         data = next(iter(dataloader))
         data = recursive_to_device(data, self.device)
         vis = self.visualize_sample(data)
@@ -207,14 +208,14 @@ class Trainer:
             save_cfg = [(f'dataset_{k}', v) for k, v in vis.items()]
         else:
             save_cfg = [('dataset', vis)]
-        for name, image in save_cfg:
-            utils.save_image(
-                image,
-                os.path.join(self.output_dir, 'samples', f'{name}.jpg'),
-                nrow=int(np.sqrt(num_samples)),
-                normalize=True,
-                value_range=self.dataset.value_range,
-            )
+        # for name, image in save_cfg:
+        #     utils.save_image(
+        #         image,
+        #         os.path.join(self.output_dir, 'samples', f'{name}.jpg'),
+        #         nrow=int(np.sqrt(num_samples)),
+        #         normalize=True,
+        #         value_range=self.dataset.value_range,
+        #     )
 
     @torch.no_grad()
     def snapshot(self, suffix=None, num_samples=64, batch_size=4, verbose=False):

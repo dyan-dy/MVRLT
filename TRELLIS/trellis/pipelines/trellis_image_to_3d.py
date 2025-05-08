@@ -75,8 +75,8 @@ class TrellisImageTo3DPipeline(Pipeline):
         """
         Initialize the image conditioning model.
         """
-        dinov2_model = torch.hub.load('facebookresearch/dinov2', name, pretrained=True)
-        dinov2_model.eval()
+        dinov2_model = torch.hub.load("cache/hub/facebookresearch_dinov2_main", name, source='local', pretrained=True)
+
         self.models['image_cond_model'] = dinov2_model
         transform = transforms.Compose([
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),

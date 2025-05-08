@@ -9,6 +9,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'           # Set the GPU device to use. 
 
 import cv2
 import torch
+from torch.utils.data import DataLoader
 import numpy as np
 import OpenEXR
 import Imath
@@ -23,8 +24,10 @@ print("import utils")
 from trellis.utils import render_utils
 from trellis.utils.encoder_envmap import read_exr_as_tensor
 from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
+from trellis.datasets.relit_slat2render import RelitDataset
 from trellis.models.structured_latent_vae.decoder_gs import SLatGaussianDecoder, ElasticSLatGaussianDecoder
 from trellis.models.structured_latent_vae.encoder import ElasticSLatEncoder
+from trellis.modules.sparse import SparseTensor
 
 import wandb
 
@@ -79,22 +82,8 @@ outputs = pipeline.run_multi_image(
 
 # render 3d gaussian at certain viewpoint to screen for supervision
 with torch.enable_grad():
-    gs_instance = outputs['gaussian'][0]  # already on cuda
-    # relit_trainer = RelitTrainer()
-    # relit_trainer(gt_images, gs_instance)
-    # relighted_gs = render(gs)
-    # compare(relighted_gs, gt_image)
-    # trainer = RelitTrainer(
-    #     gs=gs_instance,
-    #     gt_images=images,
-    #     poses=poses,
-    #     render_type="default",
-    #     epochs=100,
-    #     lr=1e-2,
-    #     batch_size=1,
-    #     loss_type='mse'
-    # )
-    # trainer.train()
+    
+    # config and load model
     with open("/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/configs/vae/slat_vae_enc_dec_gs_swin8_B_64l8_fp16.json", "r") as f:
         config = json.load(f)
 
@@ -102,24 +91,48 @@ with torch.enable_grad():
     model_encoder = ElasticSLatEncoder(**config["models"]["encoder"]["args"]).to('cuda')
     refine_model_dict = {"encoder": model_encoder, "decoder": model_decoder} # 在这得加载整个flow模型
 
-
     checkpoint_path = "/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/cache/25e0d31ffbebe4b5a97464dd851910efc3002d96/ckpts/slat_dec_gs_swin8_B_64l8gs32_fp16.safetensors"
     checkpoint = load_file(checkpoint_path, device="cuda")
     model_decoder.load_state_dict(checkpoint)
     print("✅ Successfully loaded .safetensors checkpoint.")
 
-    dataset = PoseGTImageDataset(images, poses)
+    # prepare dataset
+    # dataset = getattr(datasets, config["dataset"]["name"])(image_folder, env_light_tensor, poses, **config["dataset"]["args"])
+    # dataset = getattr(datasets, config["dataset"]["name"])(image_size=512, model=model_decoder, resolution=512, min_aesthetic_score=0.1, roots=image_folder) # 这里数据格式和原始的不兼容，而且没有metadata
+    # dataset = None
+    # data_path = "/root/autodl-tmp/gaodongyu/MVRLT/TRELLIS/image_datasets/Standford_ORB/cup"
+    # dataset = RelitDataset(data_path)
+    # dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, **cfg.dataset.args)
+    # 替换成你本地的数据目录
+    data_root = 'datasets/Bear'  # eg. '/home/user/datasets/myset'
+    image_size = 1024
 
+    # 实例化 dataset
+    dataset = RelitDataset(root_dir=data_root, image_size=image_size)
+
+    # 创建 dataloader
+    dataloader = DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=True,
+        num_workers=0,
+        collate_fn=RelitDataset.collate_fn
+    )
+
+    # 测试迭代一次
+    for batch in dataloader:
+        print("Batch keys:", batch.keys())
+        print("Image shape:", batch["image"].shape)
+        print("Alpha shape:", batch["alpha"].shape)
+        print("Latent (SparseTensor):", batch["latents"])
+        print("Intrinsics:", batch["intrinsics"].shape)
+        print("Extrinsics:", batch["extrinsics"].shape)
+        break  # 只测试一批
+
+
+    # finetune the model
     trainer = getattr(trainers, config["trainer"]["name"])(refine_model_dict, dataset, **config["trainer"]["args"], output_dir='debug', load_dir=None, step=100000)
-    # trainer = RelitTrainer(
-    #     models = {'SLatGaussianDecoder': model},
-    #     dataset = dataset,
-    #     output_dir = "debug",
-    #     load_dir = None,  # load checkpoint?
-    #     batch_size = 1,
-    #     step = 1000,
-    #     max_steps = 1000
-    # )
+    print(trainer)
     trainer.run()
 
 

@@ -222,7 +222,13 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         for i in range(0, num_samples, batch_size):
             batch = min(batch_size, num_samples - i)
             data = next(iter(dataloader))
-            args = {k: v[:batch].cuda() for k, v in data.items()}
+            # breakpoint()
+            args = {}
+            for k, v in data.items():
+                if isinstance(v, dict):
+                    args[k] = {kk: vv[:batch].cuda() for kk, vv in v.items()}
+                else:
+                    args[k] = v[:batch].cuda()
             gt_images.append(args['image'] * args['alpha'][:, None])
             exts.append(args['extrinsics'])
             ints.append(args['intrinsics'])
