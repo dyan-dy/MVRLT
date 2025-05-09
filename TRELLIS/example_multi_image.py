@@ -23,11 +23,12 @@ from trellis.pipelines import TrellisImageTo3DPipeline
 print("import utils")
 from trellis.utils import render_utils
 from trellis.utils.encoder_envmap import read_exr_as_tensor
-from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
+# from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
 from trellis.datasets.relit_slat2render import RelitDataset
 from trellis.models.structured_latent_vae.decoder_gs import SLatGaussianDecoder, ElasticSLatGaussianDecoder
 from trellis.models.structured_latent_vae.encoder import ElasticSLatEncoder
 from trellis.modules.sparse import SparseTensor
+from trellis.trainers.vae.structured_latent_vae_gaussian import SLatVaeGaussianTrainer
 
 import wandb
 
@@ -104,13 +105,15 @@ with torch.enable_grad():
     # dataset = RelitDataset(data_path)
     # dataset = getattr(datasets, cfg.dataset.name)(cfg.data_dir, **cfg.dataset.args)
     # 替换成你本地的数据目录
-    data_root = 'datasets/Bear'  # eg. '/home/user/datasets/myset'
-    image_size = 1024
+    data_root = 'datasets/relit'  # eg. '/home/user/datasets/myset'
+    image_size = 512
 
     # 实例化 dataset
+    print("Creating dataset...")
     dataset = RelitDataset(root_dir=data_root, image_size=image_size)
 
     # 创建 dataloader
+    print("Creating dataloader...")
     dataloader = DataLoader(
         dataset,
         batch_size=1,
@@ -120,19 +123,24 @@ with torch.enable_grad():
     )
 
     # 测试迭代一次
+    print("Testing dataloader...")
+    # breakpoint()
     for batch in dataloader:
         print("Batch keys:", batch.keys())
         print("Image shape:", batch["image"].shape)
         print("Alpha shape:", batch["alpha"].shape)
-        print("Latent (SparseTensor):", batch["latents"])
+        print("Coords shape:", batch["coords"].shape)
+        print("Feats shape:", batch["feats"].shape)
         print("Intrinsics:", batch["intrinsics"].shape)
         print("Extrinsics:", batch["extrinsics"].shape)
-        break  # 只测试一批
+
 
 
     # finetune the model
-    trainer = getattr(trainers, config["trainer"]["name"])(refine_model_dict, dataset, **config["trainer"]["args"], output_dir='debug', load_dir=None, step=100000)
-    print(trainer)
+    # breakpoint()
+    # trainer = getattr(trainers, 'SLatVaeGaussianTrainer')(refine_model_dict, dataset, **config["trainer"]["args"], output_dir='debug', load_dir=None, step=100000)
+    trainer = SLatVaeGaussianTrainer(refine_model_dict, dataset, **config["trainer"]["args"], output_dir='debug', load_dir=None, step=100000)
+    # print(trainer)
     trainer.run()
 
 

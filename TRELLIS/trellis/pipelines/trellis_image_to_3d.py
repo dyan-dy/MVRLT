@@ -302,7 +302,7 @@ class TrellisImageTo3DPipeline(Pipeline):
             **cond,
             **sampler_params,
             verbose=True
-        ).samples # [1, 8]
+        ).samples # [1, 8] 这里8已经是decoder的输出了，我们需要encoder的输出也就是1024
 
         std = torch.tensor(self.slat_normalization['std'])[None].to(slat.device)
         mean = torch.tensor(self.slat_normalization['mean'])[None].to(slat.device)

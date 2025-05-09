@@ -6,7 +6,7 @@
                 "resolution": 64,
                 "in_channels": 1024,
                 "model_channels": 768,
-                "latent_channels": 16,
+                "latent_channels": 8,
                 "num_blocks": 12,
                 "num_heads": 12,
                 "mlp_ratio": 4,

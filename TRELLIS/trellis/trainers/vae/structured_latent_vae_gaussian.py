@@ -205,6 +205,7 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         batch_size: int,
         verbose: bool = False,
     ) -> Dict:
+        print("🍃inherited SlatVAE trainer")
         dataloader = DataLoader(
             copy.deepcopy(self.dataset),
             batch_size=batch_size,
@@ -229,10 +230,13 @@ class SLatVaeGaussianTrainer(BasicTrainer):
                     args[k] = {kk: vv[:batch].cuda() for kk, vv in v.items()}
                 else:
                     args[k] = v[:batch].cuda()
+            # breakpoint()
             gt_images.append(args['image'] * args['alpha'][:, None])
             exts.append(args['extrinsics'])
             ints.append(args['intrinsics'])
-            z = self.models['encoder'](args['feats'], sample_posterior=True, return_raw=False)
+            # breakpoint()
+            # z = self.models['encoder'](args['feats'], sample_posterior=True, return_raw=False)
+            z = self.models['encoder'](args['latents'], sample_posterior=True, return_raw=False)
             reps.extend(self.models['decoder'](z))
         gt_images = torch.cat(gt_images, dim=0)
         ret_dict.update({f'gt_image': {'value': gt_images, 'type': 'image'}})

@@ -96,9 +96,12 @@ class BasicTrainer(Trainer):
 
         # Build master params
         # breakpoint()
-        self.model_params = sum(
-            [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
-        , [])
+        # self.model_params = sum(
+        #     [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
+        # , [])
+        self.model_params = [
+            p for p in self.models['decoder'].parameters() if p.requires_grad
+        ]
         if self.fp16_mode == 'amp':
             self.master_params = self.model_params
             self.scaler = torch.GradScaler() if self.fp16_mode == 'amp' else None
@@ -116,6 +119,7 @@ class BasicTrainer(Trainer):
             self.ema_params = [copy.deepcopy(self.master_params) for _ in self.ema_rate]
 
         # Initialize optimizer
+        print("\n🚵‍♂️initializing optimizer...")
         # breakpoint()
         if hasattr(torch.optim, self.optimizer_config['name']):
             self.optimizer = getattr(torch.optim, self.optimizer_config['name'])(self.master_params, **self.optimizer_config['args'])

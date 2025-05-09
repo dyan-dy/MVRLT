@@ -176,6 +176,7 @@ class Trainer:
         """
         Run a snapshot of the model.
         """
+        print("run snapshot")
         pass
 
     @torch.no_grad()
@@ -188,11 +189,12 @@ class Trainer:
         else:
             return sample
 
-    @torch.no_grad()
+    @torch.no_grad() #这里到时候要打开
     def snapshot_dataset(self, num_samples=1):
         """
         Sample images from the dataset.
         """
+        print("\n⏳Sampling dataset...")
         dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=num_samples,
@@ -230,10 +232,13 @@ class Trainer:
             suffix = f'step{self.step:07d}'
 
         # Assign tasks
+        print("assign tasks")
+        # breakpoint()
         num_samples_per_process = int(np.ceil(num_samples / self.world_size))
         samples = self.run_snapshot(num_samples_per_process, batch_size=batch_size, verbose=verbose)
 
         # Preprocess images
+        print("preprocess images")
         for key in list(samples.keys()):
             if samples[key]['type'] == 'sample':
                 vis = self.visualize_sample(samples[key]['value'])
@@ -245,6 +250,7 @@ class Trainer:
                     samples[key] = {'value': vis, 'type': 'image'}
 
         # Gather results
+        print("gather results")
         if self.world_size > 1:
             for key in samples.keys():
                 samples[key]['value'] = samples[key]['value'].contiguous()
@@ -257,6 +263,7 @@ class Trainer:
                     samples[key]['value'] = torch.cat(all_images, dim=0)[:num_samples]
 
         # Save images
+        print("save images")
         if self.is_master:
             os.makedirs(os.path.join(self.output_dir, 'samples', suffix), exist_ok=True)
             for key in samples.keys():
@@ -349,6 +356,7 @@ class Trainer:
         """
         Run training.
         """
+        print("🏃‍running")
         if self.is_master:
             print('\nStarting training...')
             self.snapshot_dataset()
@@ -357,6 +365,7 @@ class Trainer:
         else: # resume
             self.snapshot(suffix=f'resume_step{self.step:07d}')
 
+        print("🏃‍🏃‍ run to steps")
         log = []
         time_last_print = 0.0
         time_elapsed = 0.0
@@ -432,6 +441,7 @@ class Trainer:
                     self.save()
 
         if self.is_master:
+            print("is master")
             self.snapshot(suffix='final')
             self.writer.close()
             print('Training finished.')

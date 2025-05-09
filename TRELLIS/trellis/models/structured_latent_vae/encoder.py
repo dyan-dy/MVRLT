@@ -45,6 +45,10 @@ class SLatEncoder(SparseTransformerBase):
         self.initialize_weights()
         if use_fp16:
             self.convert_to_fp16()
+        
+        # 冻结所有 encoder 参数
+        for param in self.parameters():
+            param.requires_grad = False
 
     def initialize_weights(self) -> None:
         super().initialize_weights()

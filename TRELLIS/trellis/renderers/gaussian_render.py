@@ -216,7 +216,7 @@ class GaussianRenderer:
         focaly = intrinsics[1, 1]
         fovx = 2 * torch.atan(0.5 / focalx)
         fovy = 2 * torch.atan(0.5 / focaly)
-            
+        # breakpoint()
         camera_dict = edict({
             "image_height": resolution * ssaa,
             "image_width": resolution * ssaa,
@@ -225,8 +225,8 @@ class GaussianRenderer:
             "znear": near,
             "zfar": far,
             "world_view_transform": view.T.contiguous(),
-            "projection_matrix": perspective.T.contiguous(),
-            "full_proj_transform": (perspective @ view).T.contiguous(),
+            "projection_matrix": perspective.float().T.contiguous(),
+            "full_proj_transform": (perspective.float() @ view.float()).T.contiguous(),
             "camera_center": camera
         })
 

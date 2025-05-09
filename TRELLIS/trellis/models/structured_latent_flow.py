@@ -255,6 +255,8 @@ class SLatFlowModel(nn.Module):
             h = h + self.pos_embedder(h.coords[:, 1:]).type(self.dtype)
         for block in self.blocks:
             h = block(h, t_emb, cond)
+        torch.save(h, "datasets/bear_original/slat_encoder_sparse_tensor.pt") 
+        print("🔥 h shape:", h.shape)
 
         # unpack with output blocks
         for block, skip in zip(self.out_blocks, reversed(skips)):
