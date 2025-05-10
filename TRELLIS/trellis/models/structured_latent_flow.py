@@ -267,6 +267,8 @@ class SLatFlowModel(nn.Module):
 
         h = h.replace(F.layer_norm(h.feats, h.feats.shape[-1:]))
         h = self.out_layer(h.type(x.dtype))
+        torch.save(h, "datasets/bear_original/slat_decoder_sparse_tensor.pt") 
+        print("🔥 h shape:", h.shape)
         return h
     
 

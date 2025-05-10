@@ -116,3 +116,5 @@ if __name__ == '__main__':
         SLatFlowModel,
         ElasticSLatFlowModel,
     )
+
+    from .light_tokenizer import LightTokenizer

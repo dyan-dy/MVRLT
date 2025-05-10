@@ -23,8 +23,8 @@ from trellis.pipelines import TrellisImageTo3DPipeline
 print("import utils")
 from trellis.utils import render_utils
 from trellis.utils.encoder_envmap import read_exr_as_tensor
-# from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
-from trellis.datasets.relit_slat2render import RelitDataset
+from trellis.trainers.relit_trainer import RelitTrainer, PoseGTImageDataset
+# from trellis.datasets.relit_slat2render import RelitDataset
 from trellis.models.structured_latent_vae.decoder_gs import SLatGaussianDecoder, ElasticSLatGaussianDecoder
 from trellis.models.structured_latent_vae.encoder import ElasticSLatEncoder
 from trellis.modules.sparse import SparseTensor

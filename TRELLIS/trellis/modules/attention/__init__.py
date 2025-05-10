@@ -34,3 +34,4 @@ def set_debug(debug: bool):
 
 from .full_attn import *
 from .modules import *
+from .cross_attn import CrossAttentionLayer
