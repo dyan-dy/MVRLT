@@ -96,12 +96,12 @@ class BasicTrainer(Trainer):
 
         # Build master params
         # breakpoint()
-        # self.model_params = sum(
-        #     [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
-        # , [])
-        self.model_params = [
-            p for p in self.models['decoder'].parameters() if p.requires_grad
-        ]
+        self.model_params = sum(
+            [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
+        , [])
+        # self.model_params = [
+        #     p for p in self.models['decoder'].parameters() if p.requires_grad
+        # ]
         if self.fp16_mode == 'amp':
             self.master_params = self.model_params
             self.scaler = torch.GradScaler() if self.fp16_mode == 'amp' else None
