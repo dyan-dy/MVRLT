@@ -8,10 +8,12 @@ __attributes = {
     
     'SLatEncoder': 'structured_latent_vae',
     'SLatGaussianDecoder': 'structured_latent_vae',
+    'ConditionedSLatGaussianDecoder': 'structured_latent_vae',
     'SLatRadianceFieldDecoder': 'structured_latent_vae',
     'SLatMeshDecoder': 'structured_latent_vae',
     'ElasticSLatEncoder': 'structured_latent_vae',
     'ElasticSLatGaussianDecoder': 'structured_latent_vae',
+    'ElasticConditionedSLatGaussianDecoder':'structured_latent_vae',
     'ElasticSLatRadianceFieldDecoder': 'structured_latent_vae',
     'ElasticSLatMeshDecoder': 'structured_latent_vae',
     
