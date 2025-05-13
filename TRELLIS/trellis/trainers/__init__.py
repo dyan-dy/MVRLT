@@ -6,6 +6,7 @@ __attributes = {
     'SparseStructureVaeTrainer': 'vae.sparse_structure_vae',
     
     'SLatVaeGaussianTrainer': 'vae.structured_latent_vae_gaussian',
+    'DecoderFinetuneTrainer':'vae.relit_structured_latent_vae_gaussian', 
     'SLatVaeRadianceFieldDecoderTrainer': 'vae.structured_latent_vae_rf_dec',
     'SLatVaeMeshDecoderTrainer': 'vae.structured_latent_vae_mesh_dec',
     

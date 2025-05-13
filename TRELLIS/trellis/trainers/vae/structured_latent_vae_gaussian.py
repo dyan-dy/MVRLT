@@ -223,6 +223,7 @@ class SLatVaeGaussianTrainer(BasicTrainer):
         for i in range(0, num_samples, batch_size):
             batch = min(batch_size, num_samples - i)
             data = next(iter(dataloader))
+            print("🔢data iteration", data.keys())
             # breakpoint()
             args = {}
             for k, v in data.items():
@@ -231,12 +232,19 @@ class SLatVaeGaussianTrainer(BasicTrainer):
                 else:
                     args[k] = v[:batch].cuda()
             # breakpoint()
-            gt_images.append(args['image'] * args['alpha'][:, None])
+            # gt_images.append(args['image_light'] * args['alpha'][:, None])
+            gt_images.append(args['image_light'])
             exts.append(args['extrinsics'])
             ints.append(args['intrinsics'])
             # breakpoint()
             # z = self.models['encoder'](args['feats'], sample_posterior=True, return_raw=False)
-            z = self.models['encoder'](args['latents'], sample_posterior=True, return_raw=False)
+            print("🧠 model", self.models.keys())
+            print("🚗 args", args.keys())
+            if 'encoder' not in self.models.keys():
+                z = args['feats1'].feats
+            else: 
+                z = self.models['encoder'](args['latents'], sample_posterior=True, return_raw=False)
+            print("🌙 z type", type(z))
             reps.extend(self.models['decoder'](z))
         gt_images = torch.cat(gt_images, dim=0)
         ret_dict.update({f'gt_image': {'value': gt_images, 'type': 'image'}})

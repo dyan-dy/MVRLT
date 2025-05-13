@@ -1,3 +1,5 @@
+# to fuse light info
+
 import torch
 import torch.nn as nn
 

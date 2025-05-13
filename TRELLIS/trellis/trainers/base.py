@@ -71,16 +71,21 @@ class Trainer:
         self.i_log = i_log
         self.i_sample = i_sample
         self.i_save = i_save
-        self.i_ddpcheck = i_ddpcheck        
+        self.i_ddpcheck = i_ddpcheck  
 
         if dist.is_initialized():
+            dist.destroy_process_group() # force to stop ddp
+      
+        if dist.is_initialized():
             # Multi-GPU params
+            print("🌳💻 multi node")
             self.world_size = dist.get_world_size()
             self.rank = dist.get_rank()
             self.local_rank = dist.get_rank() % torch.cuda.device_count()
             self.is_master = self.rank == 0
         else:
             # Single-GPU params
+            print("💻 single node")
             self.world_size = 1
             self.rank = 0
             self.local_rank = 0
@@ -90,7 +95,6 @@ class Trainer:
         self.batch_size_per_gpu = batch_size_per_gpu if batch_size_per_gpu is not None else batch_size // self.world_size
         assert self.batch_size % self.world_size == 0, 'Batch size must be divisible by the number of GPUs.'
         assert self.batch_size_per_gpu % self.batch_split == 0, 'Batch size per GPU must be divisible by batch split.'
-
         self.init_models_and_more(**kwargs)
         self.prepare_dataloader(**kwargs)
         

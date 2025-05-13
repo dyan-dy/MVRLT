@@ -17,7 +17,7 @@ python train.py \
     --data_dir $DATA_DIR \
     # --load_dir $LOAD_DIR \
     # --ckpt latest \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     --node_rank 0 \
     --master_addr localhost \

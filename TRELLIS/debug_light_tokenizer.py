@@ -1,5 +1,5 @@
 import torch
-from trellis.models.light_tokenizer import LightTokenizer
+from MVRLT.TRELLIS.trellis.models._light_tokenizer import LightTokenizer
 from trellis.utils.load_hdr_image import load_hdr_image
 
 # Step 1: 加载 HDR 环境图（支持 .exr / .hdr）
