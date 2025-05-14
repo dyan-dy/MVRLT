@@ -136,7 +136,7 @@ def render(viewpoint_camera, pc : Gaussian, pipe, bg_color : torch.Tensor, scali
         cov3D_precomp = cov3D_precomp
     ) # torch.Size([3, 512, 512]) torch.float32
 
-    print("let's check the gaussian render")
+    # print("let's check the gaussian render")
     # breakpoint()
     # print("shape of rendered_image", rendered_image.shape)
     # print("shape of radii", radii.shape)

@@ -66,6 +66,8 @@ class ConditionedSLatGaussianDecoder(SLatGaussianDecoder):
         else:
             self.tokenizer = None
 
+        self.input_proj = nn.Linear(1024, self.model_channels) 
+
         # Add cross-attention layer for light conditioning
         self.cross_attn = CrossAttentionLayer(
             query_dim=self.model_channels,  # Use the model's channels as the query dimension
@@ -88,16 +90,24 @@ class ConditionedSLatGaussianDecoder(SLatGaussianDecoder):
         
         # Get features through the transformer
         # h = self.forward_features(x)
-        print(x.type)
+        print("🌼 x", x.type, x.coords.shape, x.feats.shape)
+        if x.feats.shape[1] != self.model_channels:
+            x = sp.SparseTensor(
+                feats=self.input_proj(x.feats),  # 对 feature 做 Linear
+                coords=x.coords                   # 保留坐标不变
+            )
         h = x
+        print("🌷 h", h.feats.shape, h.coords.shape)
 
         # If light map is provided, use the tokenizer to process it
         if light_map is not None and self.tokenizer is not None:
             light_tokens = self.tokenizer(light_map)
             h.feats = self.cross_attn(h.feats, context=light_tokens)
+        print("🌻 h", h.feats.shape, h.coords.shape)
 
         # Pass through the output layer and representation layer
         h = self.out_layer(h)
+        print("🍂 h", h.feats.shape, h.coords.shape)
         return self.to_representation(h)
 
 # ElasticConditionedSLatGaussianDecoder

@@ -7,12 +7,14 @@ from easydict import EasyDict as edict
 
 import torch
 import torch.multiprocessing as mp
+mp.set_start_method('spawn', force=True)
 import numpy as np
 import random
 
 from trellis import models, datasets, trainers
 from trellis.utils.dist_utils import setup_dist
 
+import wandb
 
 def find_ckpt(cfg):
     # Load checkpoint
@@ -57,6 +59,10 @@ def get_model_summary(model):
 
 
 def main(local_rank, cfg):
+
+    # Set up wandb
+    wandb.init(project="mvrlt", name="ft")
+
     # Set up distributed training
     rank = cfg.node_rank * cfg.num_gpus + local_rank
     world_size = cfg.num_nodes * cfg.num_gpus
@@ -92,6 +98,8 @@ def main(local_rank, cfg):
             trainer.profile()
         else:
             trainer.run()
+    
+    wandb.finish()
 
 
 if __name__ == '__main__':

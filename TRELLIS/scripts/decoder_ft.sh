@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 设置环境变量（根据实际需要）
-export CUDA_VISIBLE_DEVICES=0,1  # 指定使用哪些GPU
-export OMP_NUM_THREADS=8         # 多线程优化（可选）
+export CUDA_VISIBLE_DEVICES=0 #,1,2  # 指定使用哪些GPU
+# export OMP_NUM_THREADS=8         # 多线程优化（可选）
 
 # 配置路径
 CONFIG=configs/vae/relit_slat_vae_enc_dec_gs_swin8_B_64l8_fp16.json           # JSON配置文件路径

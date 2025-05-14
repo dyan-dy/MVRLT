@@ -99,6 +99,8 @@ class SLatGaussianDecoder(SparseTransformerBase):
                 scaling_activation = self.rep_config['scaling_activation']
             )
             xyz = (x.coords[x.layout[i]][:, 1:].float() + 0.5) / self.resolution
+            print("🐱 xyz offset", xyz.shape)
+            print("🐱 x ", x.coords.shape, x.layout)
             for k, v in self.layout.items():
                 if k == '_xyz':
                     offset = x.feats[x.layout[i]][:, v['range'][0]:v['range'][1]].reshape(-1, *v['shape'])
@@ -106,6 +108,7 @@ class SLatGaussianDecoder(SparseTransformerBase):
                     if self.rep_config['perturb_offset']:
                         offset = offset + self.offset_perturbation
                     offset = torch.tanh(offset) / self.resolution * 0.5 * self.rep_config['voxel_size']
+                    print("🦊 xyz offset", xyz.shape, offset.shape)
                     _xyz = xyz.unsqueeze(1) + offset
                     setattr(representation, k, _xyz.flatten(0, 1))
                 else:

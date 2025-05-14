@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 from easydict import EasyDict as edict
 import copy
+import wandb
 
 import utils3d.torch
 from ..basic import BasicTrainer
@@ -140,6 +141,18 @@ class DecoderFinetuneTrainer(SLatVaeGaussianTrainer):
         terms["loss"] = terms["loss"] + reg_loss
 
         status = self._get_status(z, reps)
+
+        # ===== wandb logging (每个 loss 项都记录) =====
+        wandb_log = {}
+        for key, value in terms.items():
+            if isinstance(value, torch.Tensor):
+                wandb_log[f"loss/{key}"] = value.item()
+
+        # 记录图像（batch 中第 0 张）
+        wandb_log["image/rec"] = wandb.Image(rec_image[0].clamp(0, 1))
+        wandb_log["image/gt"] = wandb.Image(gt_image[0].clamp(0, 1))
+
+        wandb.log(wandb_log)
 
         if return_aux:
             return terms, status, {'rec_image': rec_image, 'gt_image': gt_image}
