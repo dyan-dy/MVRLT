@@ -97,6 +97,7 @@ class ConditionedSLatGaussianDecoder(SLatGaussianDecoder):
                 feats=self.input_proj(x.feats),  # 对 feature 做 Linear
                 coords=x.coords                   # 保留坐标不变
             )
+        # h = super().forward(x)
         h = x
         print("🌷 h", h.feats.shape, h.coords.shape)
 

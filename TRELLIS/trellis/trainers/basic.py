@@ -369,16 +369,22 @@ class BasicTrainer(Trainer):
                 if self.fp16_mode == 'amp':
                     self.scaler.scale(l).backward()
                 elif self.fp16_mode == 'inflat_all':
+                    print(f"Before backward: loss = {l.item()}")
                     scaled_l = l * (2 ** self.log_scale)
                     print("⏮backward")
+                    print("🔍 Checking gradients...")
                     for model_name, model in self.models.items():
                         for name, param in model.named_parameters():
                             if not param.requires_grad:
-                                continue  # 可能是 frozen 的参数
+                                continue
                             if param.grad is None:
                                 print(f"[❌ NoGrad] {model_name}.{name}")
                             elif not torch.isfinite(param.grad).all():
                                 print(f"[⚠️ InvalidGrad] {model_name}.{name} contains NaN or Inf")
+                            elif param.grad.abs().sum() == 0:
+                                print(f"[⚠️ ZeroGrad] {model_name}.{name} grad is all zeros")
+                            else:
+                                print(f"[✅ Grad] {model_name}.{name} norm = {param.grad.norm().item():.4f}")
                     scaled_l.backward()
                 else:
                     l.backward()

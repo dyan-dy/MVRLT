@@ -119,6 +119,7 @@ class SLatGaussianDecoder(SparseTransformerBase):
         return ret
 
     def forward(self, x: sp.SparseTensor) -> List[Gaussian]:
+        print("⏭ forward")
         h = super().forward(x)
         h = h.type(x.dtype)
         h = h.replace(F.layer_norm(h.feats, h.feats.shape[-1:]))
