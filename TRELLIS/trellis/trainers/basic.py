@@ -95,17 +95,18 @@ class BasicTrainer(Trainer):
             self.training_models = self.models
 
         # Build master params
-        # breakpoint()
+        print("🤖 model", self.models.values())
         self.model_params = sum(
             [[p for p in model.parameters() if p.requires_grad] for model in self.models.values()]
         , [])
+        # breakpoint()
         # self.model_params = [
         #     p for p in self.models['decoder'].parameters() if p.requires_grad
         # ]
         if self.fp16_mode == 'amp':
             self.master_params = self.model_params
             self.scaler = torch.GradScaler() if self.fp16_mode == 'amp' else None
-        elif self.fp16_mode == 'inflat_all':
+        elif self.fp16_mode == 'inflat_all': # we are in this branch
             self.master_params = make_master_params(self.model_params)
             self.fp16_scale_growth = self.fp16_scale_growth
             self.log_scale = 20.0
@@ -369,6 +370,15 @@ class BasicTrainer(Trainer):
                     self.scaler.scale(l).backward()
                 elif self.fp16_mode == 'inflat_all':
                     scaled_l = l * (2 ** self.log_scale)
+                    print("⏮backward")
+                    for model_name, model in self.models.items():
+                        for name, param in model.named_parameters():
+                            if not param.requires_grad:
+                                continue  # 可能是 frozen 的参数
+                            if param.grad is None:
+                                print(f"[❌ NoGrad] {model_name}.{name}")
+                            elif not torch.isfinite(param.grad).all():
+                                print(f"[⚠️ InvalidGrad] {model_name}.{name} contains NaN or Inf")
                     scaled_l.backward()
                 else:
                     l.backward()
@@ -381,7 +391,7 @@ class BasicTrainer(Trainer):
         if self.grad_clip is not None:
             if self.fp16_mode == 'amp':
                 self.scaler.unscale_(self.optimizer)
-            elif self.fp16_mode == 'inflat_all':
+            elif self.fp16_mode == 'inflat_all': # we are in this branch
                 model_grads_to_master_grads(self.model_params, self.master_params)
                 self.master_params[0].grad.mul_(1.0 / (2 ** self.log_scale))
             if isinstance(self.grad_clip, float):

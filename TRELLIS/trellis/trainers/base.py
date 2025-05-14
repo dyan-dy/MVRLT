@@ -142,7 +142,7 @@ class Trainer:
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=self.batch_size_per_gpu,
-            num_workers=int(np.ceil(os.cpu_count() / torch.cuda.device_count())),
+            num_workers=1, # int(np.ceil(os.cpu_count() / torch.cuda.device_count())),
             pin_memory=True,
             drop_last=True,
             persistent_workers=True,
@@ -324,14 +324,18 @@ class Trainer:
         """
         Load data.
         """
+        # breakpoint()
         if self.prefetch_data:
             if self._data_prefetched is None:
-                self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
+                print("🙋‍")
+                data_item = next(self.data_iterator)
+                print("🙅‍")
+                self._data_prefetched = recursive_to_device(data_item, self.device, non_blocking=True) # 就是这一步反复调用后端
             data = self._data_prefetched
             self._data_prefetched = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
         else:
             data = recursive_to_device(next(self.data_iterator), self.device, non_blocking=True)
-        
+        print("🪁")
         # if the data is a dict, we need to split it into multiple dicts with batch_size_per_gpu
         if isinstance(data, dict):
             if self.batch_split == 1:
@@ -374,9 +378,11 @@ class Trainer:
         time_last_print = 0.0
         time_elapsed = 0.0
         while self.step < self.max_steps:
+            print("⏰ timing start")
             time_start = time.time()
-
+            print("🥏 loading data")
             data_list = self.load_data()
+            print("✌ data loading finished")
             step_log = self.run_step(data_list)
 
             time_end = time.time()

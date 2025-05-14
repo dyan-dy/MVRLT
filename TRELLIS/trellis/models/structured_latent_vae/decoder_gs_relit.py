@@ -31,6 +31,7 @@ class LightTokenizer(nn.Module):
         self.learning_rate = learning_rate
 
     def forward(self, light_map: torch.Tensor):
+        print("✅💡 LightTokenizer forward called")
         x = self.encoder(light_map)
         if self.pos_embed.shape[-2:] != x.shape[-2:]:
             pos_embed = F.interpolate(self.pos_embed, size=x.shape[-2:], mode='bilinear', align_corners=False)
@@ -87,7 +88,7 @@ class ConditionedSLatGaussianDecoder(SLatGaussianDecoder):
         Returns:
             List[Gaussian]: Output Gaussian distributions.
         """
-        
+        print("✅ Decoder forward called")
         # Get features through the transformer
         # h = self.forward_features(x)
         print("🌼 x", x.type, x.coords.shape, x.feats.shape)

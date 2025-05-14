@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 # FP16 utils
@@ -47,8 +48,14 @@ def model_grads_to_master_grads(model_params, master_params):
     Copy the gradients from the model parameters into the master parameters
     from make_master_params().
     """
+    # breakpoint()
     master_params[0].grad = _flatten_dense_tensors(
-        [param.grad.data.detach().float() for param in model_params]
+        # [param.grad.data.detach().float() for param in model_params]
+        # [param.grad.data.detach().float() for param in model_params if param.grad is not None]
+        [
+            param.grad.data.detach().float() if param.grad is not None else torch.zeros_like(param)
+            for param in model_params
+        ]
     )
     
 

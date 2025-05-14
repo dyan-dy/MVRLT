@@ -11,7 +11,7 @@ DATA_DIR=datasets/Proc_Data                            # 数据集目录
 # LOAD_DIR=                                      # 可选加载目录（为空时默认为OUTPUT_DIR）
 
 # 启动训练
-python train.py \
+python train_relit.py \
     --config $CONFIG \
     --output_dir $OUTPUT_DIR \
     --data_dir $DATA_DIR \
