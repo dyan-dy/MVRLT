@@ -193,7 +193,7 @@ class Trainer:
         else:
             return sample
 
-    @torch.no_grad() #这里到时候要打开
+    @torch.no_grad() #这里到时候要打开，不要打开
     def snapshot_dataset(self, num_samples=1):
         """
         Sample images from the dataset.

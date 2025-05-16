@@ -240,10 +240,11 @@ class SLatVaeGaussianTrainer(BasicTrainer):
             # z = self.models['encoder'](args['feats'], sample_posterior=True, return_raw=False)
             print("🧠 model", self.models.keys())
             print("🚗 args", args.keys())
-            if 'encoder' not in self.models.keys():
-                z = args['feats1']
-            else: 
-                z = self.models['encoder'](args['latents'], sample_posterior=True, return_raw=False)
+            # if 'encoder' not in self.models.keys():
+            #     z = args['feats1']
+            # else: 
+            #     z = self.models['encoder'](args['latents'], sample_posterior=True, return_raw=False)
+            z = args['feats2']
             print("🌙 z type", type(z), z.feats.shape, z.coords.shape)
             reps.extend(self.models['decoder'](z))
         gt_images = torch.cat(gt_images, dim=0)

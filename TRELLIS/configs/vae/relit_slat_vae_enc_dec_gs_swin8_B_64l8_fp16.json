@@ -27,6 +27,7 @@
                 "attn_mode": "swin",
                 "window_size": 8,
                 "use_fp16": true,
+                "cross_attn_layer": 3,
                 "tokenizer_config":{
                     "in_channels": 3,
                     "embed_dim": 128,

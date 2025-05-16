@@ -62,6 +62,7 @@ class SparseTransformerBase(nn.Module):
             self.pos_embedder = AbsolutePositionEmbedder(model_channels)
 
         self.input_layer = sp.SparseLinear(in_channels, model_channels)
+        print("input layer", self.input_layer)
         self.blocks = nn.ModuleList([
             SparseTransformerBlock(
                 model_channels,
@@ -111,6 +112,7 @@ class SparseTransformerBase(nn.Module):
         # breakpoint()
         # x_prime = nn.Linear()(x)
         h = self.input_layer(x)
+        print(self.input_layer)
         if self.pe_mode == "ape":
             h = h + self.pos_embedder(x.coords[:, 1:])
         h = h.type(self.dtype)

@@ -42,6 +42,12 @@ def master_params_to_model_params(model_params, master_params):
     ):
         param.detach().copy_(master_param)
 
+    # for param, master_param in zip(
+    #     model_params, _unflatten_dense_tensors(master_params[0], model_params)
+    # ):
+    #     param.data.copy_(master_param.data)
+
+
 
 def model_grads_to_master_grads(model_params, master_params):
     """

@@ -38,6 +38,8 @@ def main():
     
     # 初始化wandb
     wandb.init(project="mvrlt", name="simple_train")
+
+    torch.autograd.set_detect_anomaly(True) # 检查梯度链在哪里断裂
     
     # 加载数据集
     print("loading dataset")
@@ -65,7 +67,7 @@ def main():
         num_params = sum(p.numel() for p in model.parameters())
         num_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"Parameters: {num_params}, Trainable: {num_trainable}")
-    
+    # breakpoint()
     # 加载断点(如果需要)
     load_ckpt = cfg.get('load_ckpt', None)
     
